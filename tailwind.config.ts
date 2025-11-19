@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
+import tailwindAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -58,7 +59,7 @@ const config: Config = {
     }
   },
   plugins: [
-    require("tailwindcss-animate"),
+    tailwindAnimate,
     plugin(({ addUtilities }) => {
       addUtilities({
         ".glass-panel": {

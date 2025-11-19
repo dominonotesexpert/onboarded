@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import { prisma } from "~/lib/prisma.server";
 import { isDemoMode } from "~/utils/env.server";
 import { demoWorkflows } from "~/data/demo-workflows";

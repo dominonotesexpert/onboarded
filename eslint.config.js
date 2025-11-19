@@ -3,10 +3,11 @@ import reactPlugin from "eslint-plugin-react";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import prettierConfig from "eslint-config-prettier";
+import globals from "globals";
 
 export default [
   {
-    ignores: ["build/**", "node_modules/**"]
+    ignores: ["build/**", "public/build/**", "node_modules/**"]
   },
   {
     files: ["**/*.{ts,tsx}"],
@@ -15,6 +16,10 @@ export default [
       parserOptions: {
         project: "./tsconfig.json",
         sourceType: "module"
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node
       }
     },
     plugins: {

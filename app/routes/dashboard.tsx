@@ -1,10 +1,10 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { listExecutions } from "~/services/execution/execution-service.server";
 import { useEventSource } from "remix-utils/sse/react";
 
-export async function loader({}: LoaderFunctionArgs) {
+export async function loader() {
   const executions = await listExecutions();
   return json({ executions });
 }

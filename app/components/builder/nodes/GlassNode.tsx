@@ -1,7 +1,7 @@
 import type { NodeProps } from "reactflow";
 import { motion } from "framer-motion";
 import { Handle, Position } from "reactflow";
-import { useState } from "react";
+import { useState, MouseEvent } from "react";
 
 interface GlassNodeProps extends NodeProps {
   data: NodeProps["data"] & { onDelete?: (id: string) => void };
@@ -12,6 +12,12 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
   const badge = mode === "parallel" ? "Parallel Branch" : "Sequential Step";
   const [confirmOpen, setConfirmOpen] = useState(false);
   const canDelete = typeof data.onDelete === "function";
+  const [hoverHandle, setHoverHandle] = useState<"source" | "target" | null>(null);
+
+  const handlePointer = (event: MouseEvent, type: "source" | "target") => {
+    event.stopPropagation();
+    setHoverHandle(type);
+  };
 
   return (
     <motion.div
@@ -19,15 +25,25 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
       animate={{ opacity: 1, scale: selected ? 1.02 : 1 }}
       className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3 min-w-[190px] shadow-card relative group"
     >
+      <div
+        className="absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        onMouseEnter={(event) => handlePointer(event, "target")}
+        onMouseLeave={() => setHoverHandle(null)}
+      />
+      <div
+        className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        onMouseEnter={(event) => handlePointer(event, "source")}
+        onMouseLeave={() => setHoverHandle(null)}
+      />
       <Handle
         type="target"
         position={Position.Left}
-        className="w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair"
+        className={`w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "target" ? "scale-125" : ""}`}
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair"
+        className={`w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "source" ? "scale-125" : ""}`}
       />
 
       {canDelete ? (

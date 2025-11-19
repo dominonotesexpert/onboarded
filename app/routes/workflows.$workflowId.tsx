@@ -7,7 +7,7 @@ import { definitionToReactFlow } from "~/utils/workflow-transform";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
 import { ClientOnly } from "~/components/common/ClientOnly";
 
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!params.workflowId) {
     throw new Response("Missing workflow id", { status: 400 });
   }
@@ -15,9 +15,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
   if (!workflow) {
     throw new Response("Workflow not found", { status: 404 });
   }
+  const url = new URL(request.url);
+  const published = url.searchParams.get("status") === "published";
 
   const executions = await listExecutions(params.workflowId);
-  return json({ workflow, executions });
+  return json({ workflow, executions, published });
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -32,7 +34,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function WorkflowDetailRoute() {
-  const { workflow, executions } = useLoaderData<typeof loader>();
+  const { workflow, executions, published } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const [definition, setDefinition] = useState(() => definitionToReactFlow(workflow.definition));
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -73,6 +75,11 @@ export default function WorkflowDetailRoute() {
         </button>
       </header>
 
+      {published ? (
+        <div className="card border border-emerald-400/40 text-emerald-200 text-sm">
+          Workflow published successfully.
+        </div>
+      ) : null}
       {statusMessage ? (
         <div className="card border border-emerald-400/40 text-emerald-200 text-sm">{statusMessage}</div>
       ) : null}

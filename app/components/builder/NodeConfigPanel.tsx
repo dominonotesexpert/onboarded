@@ -71,7 +71,9 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
             const parsed = JSON.parse(config);
             onSave({ label, config: parsed, executionMode });
           } catch (error) {
-            alert(`Invalid JSON: ${(error as Error).message}`);
+            if (typeof window !== "undefined") {
+              window.alert(`Invalid JSON: ${(error as Error).message}`);
+            }
           }
         }}
       >

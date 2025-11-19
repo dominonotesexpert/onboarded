@@ -392,9 +392,6 @@ video {
 .pointer-events-none {
   pointer-events: none;
 }
-.pointer-events-auto {
-  pointer-events: auto;
-}
 .fixed {
   position: fixed;
 }
@@ -407,8 +404,14 @@ video {
 .inset-0 {
   inset: 0;
 }
+.-left-5 {
+  left: -1.25rem;
+}
 .-right-2 {
   right: -.5rem;
+}
+.-right-5 {
+  right: -1.25rem;
 }
 .-top-2 {
   top: -.5rem;
@@ -422,17 +425,11 @@ video {
 .top-0 {
   top: 0;
 }
-.top-4 {
-  top: 1rem;
-}
-.-left-6 {
-  left: -1.5rem;
-}
-.-right-6 {
-  right: -1.5rem;
-}
 .top-1\/2 {
   top: 50%;
+}
+.top-4 {
+  top: 1rem;
 }
 .z-10 {
   z-index: 10;
@@ -470,6 +467,9 @@ video {
 .h-1 {
   height: .25rem;
 }
+.h-10 {
+  height: 2.5rem;
+}
 .h-2 {
   height: .5rem;
 }
@@ -491,14 +491,14 @@ video {
 .h-full {
   height: 100%;
 }
-.h-10 {
-  height: 2.5rem;
-}
 .min-h-\[420px\] {
   min-height: 420px;
 }
 .min-h-\[640px\] {
   min-height: 640px;
+}
+.w-10 {
+  width: 2.5rem;
 }
 .w-2 {
   width: .5rem;
@@ -517,9 +517,6 @@ video {
 }
 .w-full {
   width: 100%;
-}
-.w-10 {
-  width: 2.5rem;
 }
 .min-w-\[190px\] {
   min-width: 190px;
@@ -541,6 +538,11 @@ video {
 }
 .-translate-y-1\/2 {
   --tw-translate-y: -50%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.scale-125 {
+  --tw-scale-x: 1.25;
+  --tw-scale-y: 1.25;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 @keyframes progress-shimmer {
@@ -1163,4 +1165,4 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-/*# sourceMappingURL=/build/_assets/tailwind-TYS5OO3G.css.map */
+/*# sourceMappingURL=/build/_assets/tailwind-PHNPRVEB.css.map */

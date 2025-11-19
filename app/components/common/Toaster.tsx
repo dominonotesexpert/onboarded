@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { nanoid } from "nanoid";
 
 export type ToastVariant = "success" | "error" | "info" | "warning";
@@ -28,7 +28,7 @@ const variantToColor: Record<ToastVariant, string> = {
   warning: "from-amber-400 to-amber-500"
 };
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastInternal[]>([]);
 
   const pushToast = useCallback((toast: ToastOptions) => {

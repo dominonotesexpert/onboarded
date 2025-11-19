@@ -3,7 +3,7 @@ import {
   ClientOnly,
   FlowBuilder,
   definitionToReactFlow
-} from "/build/_shared/chunk-CX3GXNCI.js";
+} from "/build/_shared/chunk-G2FX75T3.js";
 import "/build/_shared/chunk-ECSGXRMK.js";
 import "/build/_shared/chunk-Y6RJRNBS.js";
 import {
@@ -16,7 +16,8 @@ import {
   Form,
   useActionData,
   useLoaderData
-} from "/build/_shared/chunk-VV5A4Y7F.js";
+} from "/build/_shared/chunk-ULZ26LME.js";
+import "/build/_shared/chunk-PLT55Z5M.js";
 import {
   require_jsx_dev_runtime
 } from "/build/_shared/chunk-F4KNNEUR.js";
@@ -24,7 +25,6 @@ import {
   createHotContext
 } from "/build/_shared/chunk-M7AEJR4O.js";
 import "/build/_shared/chunk-JR22VO6P.js";
-import "/build/_shared/chunk-PLT55Z5M.js";
 import {
   require_react
 } from "/build/_shared/chunk-2Z2JGDFU.js";
@@ -55,7 +55,7 @@ if (import.meta) {
     //@ts-expect-error
     "app/routes/workflows.new.tsx"
   );
-  import.meta.hot.lastModified = "1763421123766.2278";
+  import.meta.hot.lastModified = "1763557044886.372";
 }
 function NewWorkflowRoute() {
   _s();
@@ -70,76 +70,76 @@ function NewWorkflowRoute() {
         /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "flex-1 min-w-[240px]", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { className: "text-xs uppercase tracking-[0.4em] text-white/50", children: "Builder" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 64,
+            lineNumber: 73,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("h2", { className: "text-3xl font-semibold text-white", children: "Create Workflow" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 65,
+            lineNumber: 74,
             columnNumber: 13
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/workflows.new.tsx",
-          lineNumber: 63,
+          lineNumber: 72,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "flex gap-3", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { className: "btn-secondary", type: "submit", name: "action", value: "draft", children: "Save Draft" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 68,
+            lineNumber: 77,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("button", { className: "btn-primary", type: "submit", name: "action", value: "publish", children: "Publish" }, void 0, false, {
-            fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 71,
-            columnNumber: 13
-          }, this)
-        ] }, void 0, true, {
-          fileName: "app/routes/workflows.new.tsx",
-          lineNumber: 67,
-          columnNumber: 11
-        }, this)
-      ] }, void 0, true, {
-        fileName: "app/routes/workflows.new.tsx",
-        lineNumber: 62,
-        columnNumber: 9
-      }, this),
-      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
-        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("label", { className: "space-y-2", children: [
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "text-xs uppercase tracking-[0.3em] text-white/60", children: "Name" }, void 0, false, {
-            fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 79,
-            columnNumber: 13
-          }, this),
-          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { className: "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white", name: "name", defaultValue: "New Workflow" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
             lineNumber: 80,
             columnNumber: 13
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/workflows.new.tsx",
-          lineNumber: 78,
+          lineNumber: 76,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "app/routes/workflows.new.tsx",
+        lineNumber: 71,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("label", { className: "space-y-2", children: [
+          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "text-xs uppercase tracking-[0.3em] text-white/60", children: "Name" }, void 0, false, {
+            fileName: "app/routes/workflows.new.tsx",
+            lineNumber: 88,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { className: "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white", name: "name", defaultValue: "New Workflow" }, void 0, false, {
+            fileName: "app/routes/workflows.new.tsx",
+            lineNumber: 89,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "app/routes/workflows.new.tsx",
+          lineNumber: 87,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("label", { className: "space-y-2", children: [
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("span", { className: "text-xs uppercase tracking-[0.3em] text-white/60", children: "Description" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 83,
+            lineNumber: 92,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { className: "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white", name: "description", placeholder: "Describe the automation" }, void 0, false, {
             fileName: "app/routes/workflows.new.tsx",
-            lineNumber: 84,
+            lineNumber: 93,
             columnNumber: 13
           }, this)
         ] }, void 0, true, {
           fileName: "app/routes/workflows.new.tsx",
-          lineNumber: 82,
+          lineNumber: 91,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "app/routes/workflows.new.tsx",
-        lineNumber: 77,
+        lineNumber: 86,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("input", { type: "hidden", name: "definition", value: JSON.stringify({
@@ -147,12 +147,12 @@ function NewWorkflowRoute() {
         edges: definition.edges
       }) }, void 0, false, {
         fileName: "app/routes/workflows.new.tsx",
-        lineNumber: 88,
+        lineNumber: 97,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 61,
+      lineNumber: 70,
       columnNumber: 7
     }, this),
     actionData?.workflow ? /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "card border-emerald-400/40", children: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("p", { className: "text-sm text-emerald-300", children: [
@@ -161,29 +161,29 @@ function NewWorkflowRoute() {
       "). Continue editing whenever you're ready."
     ] }, void 0, true, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 95,
+      lineNumber: 104,
       columnNumber: 11
     }, this) }, void 0, false, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 94,
+      lineNumber: 103,
       columnNumber: 31
     }, this) : null,
     /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(ClientOnly, { fallback: /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)("div", { className: "h-[640px] bg-white/5 rounded-3xl animate-pulse" }, void 0, false, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 100,
+      lineNumber: 109,
       columnNumber: 29
     }, this), children: () => /* @__PURE__ */ (0, import_jsx_dev_runtime.jsxDEV)(FlowBuilder, { initialNodes: definition.nodes, initialEdges: definition.edges, onChange: (payload) => setDefinition(payload) }, "new-workflow-builder", false, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 101,
+      lineNumber: 110,
       columnNumber: 16
     }, this) }, void 0, false, {
       fileName: "app/routes/workflows.new.tsx",
-      lineNumber: 100,
+      lineNumber: 109,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "app/routes/workflows.new.tsx",
-    lineNumber: 60,
+    lineNumber: 69,
     columnNumber: 10
   }, this);
 }
@@ -198,4 +198,4 @@ window.$RefreshSig$ = prevRefreshSig;
 export {
   NewWorkflowRoute as default
 };
-//# sourceMappingURL=/build/routes/workflows.new-GUNC3EW6.js.map
+//# sourceMappingURL=/build/routes/workflows.new-UTD5NHBE.js.map

@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import { FlowBuilder } from "~/components/builder/FlowBuilder";
 import { definitionToReactFlow } from "~/utils/workflow-transform";
 import { ClientOnly } from "~/components/common/ClientOnly";
 
-export async function loader({}: LoaderFunctionArgs) {
+export async function loader() {
   const heroWorkflow = demoWorkflows[0];
   const executions = demoExecutions.slice(0, 3);
 

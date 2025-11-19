@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -93,7 +93,7 @@ function FlowBuilderCanvas({
   );
 
   const handleDrop = useCallback(
-    (event: React.DragEvent) => {
+    (event: DragEvent) => {
       if (!interactive) return;
       event.preventDefault();
       const type = event.dataTransfer.getData("application/reactflow");
@@ -108,7 +108,7 @@ function FlowBuilderCanvas({
   );
 
   const handleDragOver = useCallback(
-    (event: React.DragEvent) => {
+    (event: DragEvent) => {
       if (!interactive) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";

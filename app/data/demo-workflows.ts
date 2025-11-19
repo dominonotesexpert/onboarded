@@ -1,4 +1,4 @@
-import type { WorkflowDefinition, WorkflowWithRelations, ExecutionSummary } from "~/types/workflow";
+import type { WorkflowWithRelations, ExecutionSummary } from "~/types/workflow";
 
 export const demoWorkflows: WorkflowWithRelations[] = [
   {

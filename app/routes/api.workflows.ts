@@ -1,7 +1,7 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { createWorkflow, listWorkflows } from "~/services/workflows/workflow.server";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader() {
   const workflows = await listWorkflows();
   return json({ workflows });
 }

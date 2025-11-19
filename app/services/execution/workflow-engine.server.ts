@@ -75,7 +75,7 @@ export async function runWorkflow(
 
     const batchResults = await Promise.all(effects);
 
-    for (const { nodeId, outgoingActivations } of batchResults) {
+    for (const { nodeId: ignoredNodeId, outgoingActivations } of batchResults) {
       for (const activation of outgoingActivations) {
         const processed = (processedCounts.get(activation.targetId) ?? 0) + 1;
         processedCounts.set(activation.targetId, processed);
@@ -163,7 +163,12 @@ async function runNode(
   const outgoingEdges = params.graph.edges.filter((edge) => edge.source === node.id);
   const outgoingActivations = outgoingEdges.map((edge) => ({
     targetId: edge.target,
-    activated: shouldActivateEdge(edge, result, sharedContext)
+    activated: shouldActivateEdge(
+      edge,
+      result,
+      sharedContext,
+      params.graph.nodes.get(edge.target)?.executionMode ?? node.executionMode ?? "sequential"
+    )
   }));
 
   return { nodeId: node.id, outgoingActivations };
@@ -177,7 +182,8 @@ interface ActivationResult {
 function shouldActivateEdge(
   edge: { condition?: { field: string; operator: string; value: unknown }; label?: string },
   result: TaskResult,
-  sharedContext: Record<string, unknown>
+  sharedContext: Record<string, unknown>,
+  _executionMode?: string
 ) {
   const branchMatches = result.branch ? edge.label === result.branch : true;
   if (!branchMatches) return false;

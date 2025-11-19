@@ -5,14 +5,14 @@ import {
   useToast
 } from "/build/_shared/chunk-ECSGXRMK.js";
 import {
+  require_react_dom
+} from "/build/_shared/chunk-PLT55Z5M.js";
+import {
   require_jsx_dev_runtime
 } from "/build/_shared/chunk-F4KNNEUR.js";
 import {
   createHotContext
 } from "/build/_shared/chunk-M7AEJR4O.js";
-import {
-  require_react_dom
-} from "/build/_shared/chunk-PLT55Z5M.js";
 import {
   require_react
 } from "/build/_shared/chunk-2Z2JGDFU.js";
@@ -7930,7 +7930,7 @@ if (import.meta) {
     //@ts-expect-error
     "app/components/builder/nodes/GlassNode.tsx"
   );
-  import.meta.hot.lastModified = "1763546947716.8838";
+  import.meta.hot.lastModified = "1763556096721.3123";
 }
 function GlassNode({
   data,
@@ -7942,6 +7942,11 @@ function GlassNode({
   const badge = mode === "parallel" ? "Parallel Branch" : "Sequential Step";
   const [confirmOpen, setConfirmOpen] = (0, import_react8.useState)(false);
   const canDelete = typeof data.onDelete === "function";
+  const [hoverHandle, setHoverHandle] = (0, import_react8.useState)(null);
+  const handlePointer = (event, type) => {
+    event.stopPropagation();
+    setHoverHandle(type);
+  };
   return /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)(motion.div, { initial: {
     opacity: 0.9,
     scale: 0.95
@@ -7949,14 +7954,24 @@ function GlassNode({
     opacity: 1,
     scale: selected ? 1.02 : 1
   }, className: "rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3 min-w-[190px] shadow-card relative group", children: [
-    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)(Handle$1, { type: "target", position: Position.Left, className: "w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair" }, void 0, false, {
+    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("div", { className: "absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity", onMouseEnter: (event) => handlePointer(event, "target"), onMouseLeave: () => setHoverHandle(null) }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 42,
+      lineNumber: 47,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)(Handle$1, { type: "source", position: Position.Right, className: "w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair" }, void 0, false, {
+    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("div", { className: "absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity", onMouseEnter: (event) => handlePointer(event, "source"), onMouseLeave: () => setHoverHandle(null) }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 43,
+      lineNumber: 48,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)(Handle$1, { type: "target", position: Position.Left, className: `w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "target" ? "scale-125" : ""}` }, void 0, false, {
+      fileName: "app/components/builder/nodes/GlassNode.tsx",
+      lineNumber: 49,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)(Handle$1, { type: "source", position: Position.Right, className: `w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "source" ? "scale-125" : ""}` }, void 0, false, {
+      fileName: "app/components/builder/nodes/GlassNode.tsx",
+      lineNumber: 50,
       columnNumber: 7
     }, this),
     canDelete ? /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("button", { type: "button", "aria-label": "Remove node", className: "absolute -top-2 -right-2 rounded-full bg-white/15 border border-white/30 text-white text-[10px] w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur", onClick: (event) => {
@@ -7964,45 +7979,45 @@ function GlassNode({
       setConfirmOpen(true);
     }, children: "\xD7" }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 45,
+      lineNumber: 52,
       columnNumber: 20
     }, this) : null,
     /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("p", { className: "text-[10px] uppercase tracking-[0.35em] text-white/40", children: data.type }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 52,
+      lineNumber: 59,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("p", { className: "text-lg font-semibold text-white mt-1 leading-tight", children: data.label }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 53,
+      lineNumber: 60,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("p", { className: "text-xs text-white/70 leading-relaxed mt-1", children: data.description }, void 0, false, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 54,
+      lineNumber: 61,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("span", { className: "mt-3 inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-white/85 bg-white/10 border border-white/20 rounded-full px-3 py-1", children: [
       /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("span", { className: `w-2 h-2 rounded-full ${mode === "parallel" ? "bg-emerald-400" : "bg-sky-400"}` }, void 0, false, {
         fileName: "app/components/builder/nodes/GlassNode.tsx",
-        lineNumber: 56,
+        lineNumber: 63,
         columnNumber: 9
       }, this),
       badge
     ] }, void 0, true, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 55,
+      lineNumber: 62,
       columnNumber: 7
     }, this),
     confirmOpen ? /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("div", { className: "absolute inset-0 bg-slate-950/80 backdrop-blur rounded-2xl flex flex-col items-center justify-center space-y-3 text-center p-4 z-10", children: [
       /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("p", { className: "text-sm text-white font-semibold", children: "Remove this node?" }, void 0, false, {
         fileName: "app/components/builder/nodes/GlassNode.tsx",
-        lineNumber: 61,
+        lineNumber: 68,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("p", { className: "text-xs text-white/70", children: "This will also delete any connections attached to it." }, void 0, false, {
         fileName: "app/components/builder/nodes/GlassNode.tsx",
-        lineNumber: 62,
+        lineNumber: 69,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("div", { className: "flex gap-2", children: [
@@ -8011,7 +8026,7 @@ function GlassNode({
           setConfirmOpen(false);
         }, children: "Cancel" }, void 0, false, {
           fileName: "app/components/builder/nodes/GlassNode.tsx",
-          lineNumber: 66,
+          lineNumber: 73,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ (0, import_jsx_dev_runtime3.jsxDEV)("button", { type: "button", className: "px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-rose-500 to-pink-500 shadow-glow", onClick: (event) => {
@@ -8020,26 +8035,26 @@ function GlassNode({
           setConfirmOpen(false);
         }, children: "Yes, remove" }, void 0, false, {
           fileName: "app/components/builder/nodes/GlassNode.tsx",
-          lineNumber: 72,
+          lineNumber: 79,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "app/components/builder/nodes/GlassNode.tsx",
-        lineNumber: 65,
+        lineNumber: 72,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "app/components/builder/nodes/GlassNode.tsx",
-      lineNumber: 60,
+      lineNumber: 67,
       columnNumber: 22
     }, this) : null
   ] }, void 0, true, {
     fileName: "app/components/builder/nodes/GlassNode.tsx",
-    lineNumber: 35,
+    lineNumber: 40,
     columnNumber: 10
   }, this);
 }
-_s2(GlassNode, "K0P4KBWx07RrP/6wa1lswi6XsbQ=");
+_s2(GlassNode, "Kd7AQ9mJtEbdIcectRISV06gEak=");
 _c3 = GlassNode;
 var _c3;
 $RefreshReg$(_c3, "GlassNode");
@@ -8363,4 +8378,4 @@ use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.developme
    * LICENSE file in the root directory of this source tree.
    *)
 */
-//# sourceMappingURL=/build/_shared/chunk-CX3GXNCI.js.map
+//# sourceMappingURL=/build/_shared/chunk-G2FX75T3.js.map

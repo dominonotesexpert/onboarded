@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { json, redirect, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import { definitionToReactFlow, reactFlowToDefinition } from "~/utils/workflow-transform";
 import { demoWorkflows } from "~/data/demo-workflows";
@@ -7,7 +7,7 @@ import { useState } from "react";
 import { createWorkflow } from "~/services/workflows/workflow.server";
 import { ClientOnly } from "~/components/common/ClientOnly";
 
-export async function loader({}: LoaderFunctionArgs) {
+export async function loader() {
   const template = demoWorkflows[0];
   return json({
     workflow: template
@@ -18,11 +18,18 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const parsed = JSON.parse(String(formData.get("definition") ?? "{}"));
   const definition = reactFlowToDefinition(parsed.nodes ?? [], parsed.edges ?? []);
+  const intent = String(formData.get("action") ?? "draft");
   const workflow = await createWorkflow({
     name: String(formData.get("name") ?? "Untitled Workflow"),
     description: String(formData.get("description") ?? ""),
-    definition
+    definition,
+    isDraft: intent !== "publish",
+    isPublished: intent === "publish"
   });
+
+  if (intent === "publish") {
+    return redirect(`/workflows/${workflow.id}?status=published`);
+  }
 
   return json({ workflow }, { status: 201 });
 }
@@ -82,7 +89,7 @@ export default function NewWorkflowRoute() {
       {actionData?.workflow ? (
         <div className="card border-emerald-400/40">
           <p className="text-sm text-emerald-300">
-            Workflow saved (id: {actionData.workflow.id}). Continue editing whenever you're ready.
+            Workflow saved (id: {actionData.workflow.id}). Continue editing whenever you&apos;re ready.
           </p>
         </div>
       ) : null}
