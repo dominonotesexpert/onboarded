@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
 
-      <div className="fixed top-0 right-0 z-50 p-4 space-y-2 w-full max-w-sm">
+      <div className="pointer-events-none fixed top-0 right-0 z-50 p-4 space-y-2 w-80 max-w-sm">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -62,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0, x: 50, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 50, scale: 0.9 }}
-              className="glass rounded-2xl border border-white/10 shadow-glow overflow-hidden"
+              className="pointer-events-auto glass rounded-2xl border border-white/10 shadow-glow overflow-hidden"
             >
               <div
                 className={`h-1 bg-gradient-to-r ${

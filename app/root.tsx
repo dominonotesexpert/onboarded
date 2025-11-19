@@ -14,6 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appStylesHref from "~/styles/tailwind.css";
 import reactFlowStyles from "reactflow/dist/style.css";
 import { ToastProvider } from "~/components/common/Toaster";
+import { Navbar } from "~/components/common/Navbar";
 import { getLocale, getTranslations } from "~/lib/i18n.server";
 import { i18nextClient } from "~/i18n/i18next";
 import { getQueryClient } from "~/lib/query-client";
@@ -74,7 +75,10 @@ export default function App() {
       </head>
       <body className="antialiased">
         <Providers locale={data.locale} translations={data.translations}>
-          <Outlet />
+          <Navbar />
+          <main className="pb-16">
+            <Outlet />
+          </main>
         </Providers>
 
         <ScrollRestoration />
