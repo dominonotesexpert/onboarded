@@ -32,9 +32,9 @@ export function Navbar() {
     <nav className="sticky top-0 z-[60] border-b border-white/10 bg-slate-950/85 backdrop-blur-2xl shadow-xl">
       <div className="mx-auto flex max-w-6xl items-center px-6 py-4">
         <div className="flex flex-1">
-          <Link to="/" prefetch="intent" className="text-lg font-semibold tracking-wide text-white">
+          {/* <Link to="/" prefetch="intent" className="text-lg font-semibold tracking-wide text-white">
             FlowForge
-          </Link>
+          </Link> */}
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-2 text-sm font-medium pointer-events-auto">

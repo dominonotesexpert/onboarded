@@ -44,8 +44,8 @@ export default function NewWorkflowRoute() {
       <Form method="post" className="space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex-1 min-w-[240px]">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Builder</p>
-            <h2 className="text-3xl font-semibold text-white">Create Workflow</h2>
+            {/* <p className="text-xs uppercase tracking-[0.4em] text-white/50">Builder</p>
+            <h2 className="text-3xl font-semibold text-white">Create Workflow</h2> */}
           </div>
           <div className="flex gap-3">
             <button className="btn-secondary" type="submit" name="action" value="draft">
