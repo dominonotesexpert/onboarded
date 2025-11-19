@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "FlowForge",
+    "tagline": "Moteur d'automatisation visuel",
+    "cta": "Créer un workflow",
+    "dashboard": "Tableau de bord",
+    "builder": "Éditeur visuel"
+  },
+  "workflows": {
+    "empty": "Aucun workflow pour le moment. Commencez-en un nouveau.",
+    "status": "Statut",
+    "runs": "Exécutions",
+    "lastRun": "Dernière exécution"
+  },
+  "executions": {
+    "running": "En cours",
+    "completed": "Terminé",
+    "failed": "Échec"
+  }
+}

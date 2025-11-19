@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "FlowForge",
+    "tagline": "Motor visual de automatización",
+    "cta": "Crear flujo",
+    "dashboard": "Panel de ejecuciones",
+    "builder": "Constructor visual"
+  },
+  "workflows": {
+    "empty": "Todavía no hay flujos. Crea uno para comenzar.",
+    "status": "Estado",
+    "runs": "Ejecuciones",
+    "lastRun": "Última ejecución"
+  },
+  "executions": {
+    "running": "En progreso",
+    "completed": "Completado",
+    "failed": "Fallido"
+  }
+}

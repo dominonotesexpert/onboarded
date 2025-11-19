@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "FlowForge",
+    "tagline": "Visual Workflow Automation Engine",
+    "cta": "Create Workflow",
+    "dashboard": "Execution Dashboard",
+    "builder": "Visual Builder"
+  },
+  "workflows": {
+    "empty": "No workflows yet. Start by creating one.",
+    "status": "Status",
+    "runs": "Executions",
+    "lastRun": "Last run"
+  },
+  "executions": {
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed"
+  }
+}

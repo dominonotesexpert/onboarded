@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workflow {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  definition  Json
+  version     Int            @default(1)
+  isPublished Boolean        @default(false)
+  isDraft     Boolean        @default(true)
+  nodes       WorkflowNode[]
+  edges       WorkflowEdge[]
+  executions  Execution[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  createdBy   String?
+
+  @@index([isPublished, createdAt])
+  @@index([createdBy])
+}
+
+model WorkflowNode {
+  id            String          @id @default(cuid())
+  workflowId    String
+  workflow      Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeId        String
+  type          NodeType
+  label         String
+  position      Json
+  config        Json
+  timeout       Int             @default(30000)
+  retries       Int             @default(3)
+  priority      Int             @default(0)
+  outgoingEdges WorkflowEdge[]  @relation("SourceNode")
+  incomingEdges WorkflowEdge[]  @relation("TargetNode")
+  executions    TaskExecution[]
+  createdAt     DateTime        @default(now())
+
+  @@unique([workflowId, nodeId])
+  @@index([workflowId, type])
+}
+
+model WorkflowEdge {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceId   String
+  source     WorkflowNode @relation("SourceNode", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId   String
+  target     WorkflowNode @relation("TargetNode", fields: [targetId], references: [id], onDelete: Cascade)
+  condition  Json?
+  label      String?
+  type       EdgeType @default(SMOOTHSTEP)
+  animated   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([sourceId, targetId, workflowId])
+  @@index([workflowId])
+}
+
+model Execution {
+  id            String          @id @default(cuid())
+  workflowId    String
+  workflow      Workflow        @relation(fields: [workflowId], references: [id])
+  status        ExecutionStatus
+  input         Json
+  output        Json?
+  context       Json            @default("{}")
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+  duration      Int?
+  error         String?
+  failedTaskId  String?
+  taskExecutions TaskExecution[]
+  logs          ExecutionLog[]
+  triggeredBy   String?
+
+  @@index([workflowId, status])
+  @@index([startedAt(sort: Desc)])
+  @@index([status, completedAt])
+}
+
+model TaskExecution {
+  id          String   @id @default(cuid())
+  executionId String
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  nodeId      String
+  node        WorkflowNode @relation(fields: [nodeId], references: [id])
+  status      TaskStatus
+  input       Json
+  output      Json?
+  startedAt   DateTime
+  completedAt DateTime?
+  duration    Int?
+  attempt     Int      @default(1)
+  maxAttempts Int      @default(3)
+  error       String?
+  stackTrace  String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([executionId, status])
+  @@index([nodeId, status])
+  @@index([startedAt])
+}
+
+model ExecutionLog {
+  id          String   @id @default(cuid())
+  executionId String
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  level       LogLevel
+  message     String   @db.Text
+  metadata    Json?
+  taskId      String?
+  timestamp   DateTime @default(now())
+
+  @@index([executionId, timestamp(sort: Desc)])
+  @@index([level, timestamp(sort: Desc)])
+}
+
+model Translation {
+  id        String   @id @default(cuid())
+  locale    String
+  namespace String
+  key       String
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([locale, namespace, key])
+  @@index([locale, namespace])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum NodeType {
+  START
+  EMAIL
+  SLACK
+  HTTP
+  DELAY
+  CONDITIONAL
+  TRANSFORM
+  WEBHOOK
+  END
+}
+
+enum EdgeType {
+  STRAIGHT
+  SMOOTHSTEP
+  STEP
+  BEZIER
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMEOUT
+}
+
+enum TaskStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  RETRYING
+  SKIPPED
+  TIMEOUT
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}

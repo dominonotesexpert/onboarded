@@ -1,0 +1,82 @@
+import { motion } from "framer-motion";
+import type { Node } from "reactflow";
+import { useState } from "react";
+
+interface NodeConfigPanelProps {
+  node: Node;
+  onClose: () => void;
+  onSave: (config: Record<string, unknown>) => void;
+}
+
+export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps) {
+  const [label, setLabel] = useState(node.data?.label ?? node.data?.label ?? node.id);
+  const [config, setConfig] = useState(
+    JSON.stringify(node.data?.config ?? {}, null, 2)
+  );
+  const [executionMode, setExecutionMode] = useState(
+    (node.data?.executionMode as string) ?? "sequential"
+  );
+
+  return (
+    <motion.aside
+      initial={{ x: 400, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: 400, opacity: 0 }}
+      className="w-96 border-l border-white/10 bg-midnight/80 backdrop-blur-xl p-6 space-y-4 overflow-y-auto"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-white/50">Node Config</p>
+          <h3 className="text-xl font-semibold text-white mt-1">{node.type}</h3>
+        </div>
+        <button onClick={onClose} className="text-white/60 hover:text-white text-sm">
+          Close
+        </button>
+      </div>
+
+      <label className="space-y-2 block">
+        <span className="text-xs uppercase text-white/50 tracking-[0.3em]">Label</span>
+        <input
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+        />
+      </label>
+
+      <label className="space-y-2 block">
+        <span className="text-xs uppercase text-white/50 tracking-[0.3em]">Config JSON</span>
+        <textarea
+          className="w-full h-64 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white/80"
+          value={config}
+          onChange={(event) => setConfig(event.target.value)}
+        />
+      </label>
+
+      <label className="space-y-2 block">
+        <span className="text-xs uppercase text-white/50 tracking-[0.3em]">Execution Mode</span>
+        <select
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+          value={executionMode}
+          onChange={(event) => setExecutionMode(event.target.value)}
+        >
+          <option value="sequential">Sequential (wait for completion)</option>
+          <option value="parallel">Parallel (branch instantly)</option>
+        </select>
+      </label>
+
+      <button
+        className="btn-primary w-full justify-center"
+        onClick={() => {
+          try {
+            const parsed = JSON.parse(config);
+            onSave({ label, config: parsed, executionMode });
+          } catch (error) {
+            alert(`Invalid JSON: ${(error as Error).message}`);
+          }
+        }}
+      >
+        Save
+      </button>
+    </motion.aside>
+  );
+}
