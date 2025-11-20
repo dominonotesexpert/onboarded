@@ -178,6 +178,24 @@ function FlowBuilderCanvas({
   const handleConnect = useCallback(
     (connection: Parameters<typeof addEdge>[0]) => {
       if (!interactive) return;
+      const sourceId = connection.source;
+      const targetId = connection.target;
+
+      if (sourceId && targetId) {
+        const parentsOf = (nodeId: string) => edges.filter((e) => e.target === nodeId).map((e) => e.source);
+        const sourceParents = new Set(parentsOf(sourceId));
+        const targetParents = parentsOf(targetId);
+        const sharedParent = targetParents.find((parent) => sourceParents.has(parent));
+
+        if (sharedParent) {
+          pushToast({
+            title: "Invalid connection",
+            description: "Siblings with the same parent cannot be chained together."
+          });
+          return;
+        }
+      }
+
       setEdges((eds) => {
         const nextEdges = addEdge(
           {
@@ -191,7 +209,7 @@ function FlowBuilderCanvas({
         return nextEdges;
       });
     },
-    [enforceSiblingExecutionModes, interactive, setEdges]
+    [edges, enforceSiblingExecutionModes, interactive, pushToast, setEdges]
   );
 
   const handleNodeClick = useCallback(

@@ -1,7 +1,8 @@
 import type { NodeProps } from "reactflow";
 import { motion } from "framer-motion";
 import { Handle, Position } from "reactflow";
-import { useState, MouseEvent } from "react";
+import { useState, useRef } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 
 interface GlassNodeProps extends NodeProps {
   data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string };
@@ -13,6 +14,8 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const canDelete = typeof data.onDelete === "function";
   const [hoverHandle, setHoverHandle] = useState<"source" | "target" | null>(null);
+  const sourceHandleRef = useRef<HTMLDivElement>(null);
+  const targetHandleRef = useRef<HTMLDivElement>(null);
   const status = data.status as string | undefined;
   const hasStatus = Boolean(status);
 
@@ -34,7 +37,7 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
           ? "bg-rose-400"
           : "";
 
-  const handlePointer = (event: MouseEvent, type: "source" | "target") => {
+  const handlePointer = (event: ReactMouseEvent, type: "source" | "target") => {
     event.stopPropagation();
     setHoverHandle(type);
   };
@@ -51,26 +54,68 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
         />
       ) : null}
       <div
-        className="absolute -left-7 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
+        className="absolute -left-8 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
         onMouseEnter={(event) => handlePointer(event, "target")}
         onMouseLeave={() => setHoverHandle(null)}
+        onMouseDown={(event) => {
+          event.stopPropagation();
+          targetHandleRef.current?.dispatchEvent(
+            new MouseEvent("mousedown", {
+              bubbles: true,
+              clientX: event.clientX,
+              clientY: event.clientY
+            })
+          );
+        }}
+        onMouseMove={(event) => {
+          if (!targetHandleRef.current) return;
+          targetHandleRef.current.dispatchEvent(
+            new MouseEvent("mousemove", {
+              bubbles: true,
+              clientX: event.clientX,
+              clientY: event.clientY
+            })
+          );
+        }}
       />
       <div
-        className="absolute -right-7 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
+        className="absolute -right-8 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
         onMouseEnter={(event) => handlePointer(event, "source")}
         onMouseLeave={() => setHoverHandle(null)}
+        onMouseDown={(event) => {
+          event.stopPropagation();
+          sourceHandleRef.current?.dispatchEvent(
+            new MouseEvent("mousedown", {
+              bubbles: true,
+              clientX: event.clientX,
+              clientY: event.clientY
+            })
+          );
+        }}
+        onMouseMove={(event) => {
+          if (!sourceHandleRef.current) return;
+          sourceHandleRef.current.dispatchEvent(
+            new MouseEvent("mousemove", {
+              bubbles: true,
+              clientX: event.clientX,
+              clientY: event.clientY
+            })
+          );
+        }}
       />
       <Handle
         type="target"
         position={Position.Left}
-        className={`w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+        ref={targetHandleRef}
+        className={`w-6 h-6 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
           hoverHandle === "target" ? "scale-150" : ""
         }`}
       />
       <Handle
         type="source"
         position={Position.Right}
-        className={`w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+        ref={sourceHandleRef}
+        className={`w-6 h-6 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
           hoverHandle === "source" ? "scale-150" : ""
         }`}
       />
