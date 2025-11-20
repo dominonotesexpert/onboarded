@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listExecutions, triggerExecution } from "~/services/execution/execution-service.server";
 import { getWorkflow } from "~/services/workflows/workflow.server";
 import { definitionToReactFlow } from "~/utils/workflow-transform";
@@ -49,9 +49,11 @@ export default function WorkflowDetailRoute() {
       (workflow.definition ?? { nodes: [], edges: [] }) as unknown as WorkflowDefinition,
     [workflow.definition]
   );
+  const [executionList, setExecutionList] = useState(executions);
   const [definition, setDefinition] = useState(() => definitionToReactFlow(workflowDefinition));
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showPublishedBanner, setShowPublishedBanner] = useState(published);
   const [selectedExecutionId, setSelectedExecutionId] = useState(executions[0]?.id ?? null);
   const [executionDetail, setExecutionDetail] = useState<ExecutionDetail | null>(null);
   const [liveStatuses, setLiveStatuses] = useState<Record<string, TaskStatus>>({});
@@ -59,16 +61,82 @@ export default function WorkflowDetailRoute() {
   const detailFetcher = useFetcher<{ execution: ExecutionDetail }>();
   const streamUrl = selectedExecutionId ? `/api/executions/${selectedExecutionId}/stream` : "";
   const eventStream = useEventSource(streamUrl);
+  const lastLoadedExecution = useRef<string | null>(null);
+  const lastLoadAt = useRef<number>(0);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (selectedExecutionId) {
+    if (!selectedExecutionId) return;
+
+    const now = Date.now();
+    const shouldRefreshRunning =
+      executionDetail?.status === "RUNNING" && now - lastLoadAt.current > 1500;
+    const isNewSelection = lastLoadedExecution.current !== selectedExecutionId;
+
+    if (isNewSelection || shouldRefreshRunning) {
+      lastLoadAt.current = now;
       detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      lastLoadedExecution.current = selectedExecutionId;
     }
-  }, [detailFetcher, selectedExecutionId]);
+  }, [detailFetcher, executionDetail?.status, selectedExecutionId]);
+
+  // Fallback auto-poll while RUNNING to avoid sticky UI if SSE misses.
+  useEffect(() => {
+    if (!selectedExecutionId) return;
+
+    if (refreshTimer.current) {
+      clearInterval(refreshTimer.current);
+      refreshTimer.current = null;
+    }
+
+    refreshTimer.current = setInterval(() => {
+      if (executionDetail?.status === "RUNNING") {
+        detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      } else if (refreshTimer.current) {
+        clearInterval(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+    }, 2000);
+
+    return () => {
+      if (refreshTimer.current) {
+        clearInterval(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+    };
+  }, [detailFetcher, executionDetail?.status, selectedExecutionId]);
 
   useEffect(() => {
     if (detailFetcher.data?.execution) {
       setExecutionDetail(detailFetcher.data.execution);
+      // Keep the execution list in sync so cards/pills show the latest status and duration.
+      setExecutionList((prev) => {
+        const updated = prev.map((item) =>
+          item.id === detailFetcher.data?.execution.id
+            ? {
+                ...item,
+                status: detailFetcher.data.execution.status,
+                duration: detailFetcher.data.execution.duration,
+                completedAt: detailFetcher.data.execution.completedAt
+              }
+            : item
+        );
+        // If the execution was not previously in the list (rare), append it.
+        const exists = updated.some((item) => item.id === detailFetcher.data?.execution.id);
+        if (exists) return updated;
+        const e = detailFetcher.data.execution;
+        return [
+          ...updated,
+          {
+            id: e.id,
+            workflowId: workflow.id,
+            status: e.status,
+            duration: e.duration,
+            startedAt: e.startedAt,
+            completedAt: e.completedAt
+          }
+        ];
+      });
       const taskStatuses =
         detailFetcher.data.execution.tasks?.reduce<Record<string, TaskStatus>>((acc, task) => {
           acc[task.nodeId] = task.status;
@@ -85,10 +153,19 @@ export default function WorkflowDetailRoute() {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "RUNNING" as TaskStatus }));
     } else if (parsed.type === "TASK_COMPLETED") {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "SUCCESS" as TaskStatus }));
+      // Refresh details during long runs so the UI does not stick on the last visible task.
+      if (selectedExecutionId) {
+        detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      }
     } else if (parsed.type === "TASK_FAILED") {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "FAILED" as TaskStatus }));
+      detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+    } else if (parsed.type === "EXECUTION_COMPLETED") {
+      if (selectedExecutionId) {
+        detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      }
     }
-  }, [eventStream]);
+  }, [detailFetcher, eventStream, selectedExecutionId]);
 
   useEffect(() => {
     if (fetcher.data && "executionId" in fetcher.data) {
@@ -102,6 +179,7 @@ export default function WorkflowDetailRoute() {
 
   useEffect(() => {
     setDefinition(definitionToReactFlow(workflowDefinition));
+    setShowPublishedBanner(published);
   }, [workflowDefinition]);
 
   return (
@@ -130,9 +208,16 @@ export default function WorkflowDetailRoute() {
         </button>
       </header>
 
-      {published ? (
-        <div className="card border border-emerald-400/40 text-emerald-200 text-sm">
-          Workflow published successfully.
+      {showPublishedBanner ? (
+        <div className="card border border-emerald-400/40 text-emerald-200 text-sm flex items-start justify-between gap-3">
+          <span>Workflow published successfully.</span>
+          <button
+            type="button"
+            className="text-emerald-100/80 hover:text-emerald-50"
+            onClick={() => setShowPublishedBanner(false)}
+          >
+            ×
+          </button>
         </div>
       ) : null}
       {errorMessage ? (
@@ -167,7 +252,7 @@ export default function WorkflowDetailRoute() {
       <section className="space-y-4">
         <p className="text-sm uppercase tracking-[0.4em] text-white/50">Recent Executions</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {executions.map((execution) => {
+          {executionList.map((execution) => {
             const active = execution.id === selectedExecutionId;
             return (
               <button
@@ -242,36 +327,44 @@ export default function WorkflowDetailRoute() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/50">Logs</p>
-              <div className="space-y-2 max-h-64 overflow-auto">
-                {(executionDetail.logs ?? []).map((log) => (
-                  <div
-                    key={log.id}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`px-2 py-0.5 rounded-full border text-[10px] ${
-                          log.level === "ERROR" || log.level === "FATAL"
-                            ? "border-rose-400/50 text-rose-200"
-                            : log.level === "WARN"
-                              ? "border-amber-300/60 text-amber-200"
-                              : "border-white/20 text-white/80"
-                        }`}
-                      >
-                        {log.level}
-                      </span>
-                      <span className="text-white/50">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                      </span>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.35em] text-white/50">Logs</p>
+                <div className="space-y-2 max-h-64 overflow-auto">
+                  {(executionDetail.logs ?? []).map((log) => (
+                    <div
+                      key={log.id}
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`px-2 py-0.5 rounded-full border text-[10px] ${
+                            log.level === "ERROR" || log.level === "FATAL"
+                              ? "border-rose-400/50 text-rose-200"
+                              : log.level === "WARN"
+                                ? "border-amber-300/60 text-amber-200"
+                                : "border-white/20 text-white/80"
+                          }`}
+                        >
+                          {log.level}
+                        </span>
+                        <span className="text-white/50">
+                          {new Date(log.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="mt-1">{log.message}</p>
+                      {"metadata" in log && log.metadata ? (
+                        <div className="mt-1 text-[11px] text-white/60">
+                          {log.metadata.error ? <p>Error: {String(log.metadata.error)}</p> : null}
+                          {log.metadata.stack ? (
+                            <p className="text-white/50">Stack: {String(log.metadata.stack)}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
-                    <p className="mt-1">{log.message}</p>
-                  </div>
-                ))}
-                {(executionDetail.logs ?? []).length === 0 ? (
-                  <p className="text-xs text-white/60">No logs recorded.</p>
-                ) : null}
+                  ))}
+                  {(executionDetail.logs ?? []).length === 0 ? (
+                    <p className="text-xs text-white/60">No logs recorded.</p>
+                  ) : null}
               </div>
             </div>
           </div>

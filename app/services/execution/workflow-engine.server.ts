@@ -28,6 +28,7 @@ export interface WorkflowExecutionResult {
   events: ExecutionEvent[];
   sharedContext: Record<string, unknown>;
   results: Record<string, TaskResult>;
+  durationMs?: number;
 }
 
 const defaultEmit: EmitExecutionEvent = () => undefined;
@@ -42,11 +43,13 @@ export async function runWorkflow(
   definition: WorkflowDefinition,
   payload: Record<string, unknown>,
   emit: EmitExecutionEvent = defaultEmit,
-  executionId?: string
+  executionId?: string,
+  workflowId?: string
 ): Promise<WorkflowExecutionResult> {
   validateWorkflowDefinition(definition);
   const graph = buildWorkflowGraph(definition);
   const maxConcurrency = 4;
+  const startedAt = Date.now();
   const sharedContext: Record<string, unknown> = structuredClone(payload ?? {});
   const completedResults: Record<string, TaskResult> = {};
   const outEvents: ExecutionEvent[] = [];
@@ -79,6 +82,35 @@ export async function runWorkflow(
   const indegree = new Map<string, number>();
   const activatedCounts = new Map<string, number>();
   const processedCounts = new Map<string, number>();
+  const nodeIdMap = new Map<string, string>();
+
+  if (persistLogs && workflowId) {
+    const nodes = definition.nodes;
+    const dbNodes = await Promise.all(
+      nodes.map((node) =>
+        prisma.workflowNode.upsert({
+          where: { workflowId_nodeId: { workflowId, nodeId: node.id } },
+          create: {
+            workflowId,
+            nodeId: node.id,
+            type: node.type,
+            label: node.label,
+            position: node.position as Prisma.InputJsonValue,
+            config: node.config as Prisma.InputJsonValue,
+            timeout: Number(node.timeout ?? 30000),
+            retries: Number(node.retries ?? 3)
+          },
+          update: {
+            label: node.label,
+            position: node.position as Prisma.InputJsonValue,
+            config: node.config as Prisma.InputJsonValue,
+            type: node.type
+          }
+        })
+      )
+    );
+    dbNodes.forEach((dbNode) => nodeIdMap.set(dbNode.nodeId, dbNode.id));
+  }
 
   for (const node of graph.nodes.values()) {
     const reverse = graph.reverseAdjacency.get(node.id) ?? [];
@@ -106,7 +138,9 @@ export async function runWorkflow(
       emitEvent,
       visited,
       completedResults,
-      executionId
+      executionId,
+      workflowId,
+      nodePrimaryIds: nodeIdMap
     };
 
     const runLimitedParallel = async (ids: string[]) => {
@@ -177,7 +211,8 @@ export async function runWorkflow(
   return {
     events: outEvents,
     sharedContext,
-    results: completedResults
+    results: completedResults,
+    durationMs: Date.now() - startedAt
   };
 }
 
@@ -191,6 +226,8 @@ async function runNode(
     visited: Set<string>;
     completedResults: Record<string, TaskResult>;
     executionId?: string;
+    workflowId?: string;
+    nodePrimaryIds?: Map<string, string>;
   }
 ) {
   const { graph, payload, sharedContext, emitEvent, visited, completedResults } = params;
@@ -208,7 +245,7 @@ async function runNode(
     payload: { nodeId: node.id, label: node.label, type: node.type }
   });
 
-  const shouldPersist = Boolean(params.executionId) && !isDemoMode() && isRealConfig(node.config);
+  const shouldPersist = Boolean(params.executionId) && !isDemoMode();
   const startedAt = Date.now();
   let taskRecordId: string | null = null;
 
@@ -225,7 +262,7 @@ async function runNode(
     const created = await prisma.taskExecution.create({
       data: {
         executionId: params.executionId,
-        nodeId: node.id,
+        nodeId: params.nodePrimaryIds?.get(node.id) ?? node.id,
         status: "RUNNING",
         input: payload as Prisma.InputJsonValue,
         attempt: 1,

@@ -55,7 +55,8 @@ export async function triggerExecution(workflowId: string, input: Record<string,
         activeWorkflow.definition as unknown as WorkflowDefinition,
         input,
         (event) => publishExecutionEvent(executionId, event),
-        executionId
+        executionId,
+        workflowId
       );
       publishExecutionEvent(executionId, {
         type: "EXECUTION_COMPLETED",
@@ -65,11 +66,51 @@ export async function triggerExecution(workflowId: string, input: Record<string,
         },
         timestamp: new Date().toISOString()
       });
+      if (!isDemoMode()) {
+        await prisma.execution.update({
+          where: { id: executionId },
+          data: {
+            status: "COMPLETED",
+            completedAt: new Date(),
+            duration: result.durationMs,
+            output: result.sharedContext as Prisma.InputJsonValue
+          }
+        });
+      }
     } catch (error) {
       publishExecutionEvent(executionId, {
         type: "TASK_FAILED",
         payload: {
           message: (error as Error).message
+        },
+        timestamp: new Date().toISOString()
+      });
+      if (!isDemoMode()) {
+        await prisma.execution.update({
+          where: { id: executionId },
+          data: {
+            status: "FAILED",
+            completedAt: new Date(),
+            error: (error as Error).message
+          }
+        });
+        await prisma.executionLog.create({
+          data: {
+            executionId,
+            level: "ERROR",
+            message: "Execution failed",
+            metadata: {
+              error: (error as Error).message,
+              stack: (error as Error).stack ?? "no stack"
+            }
+          }
+        });
+      }
+      publishExecutionEvent(executionId, {
+        type: "EXECUTION_COMPLETED",
+        payload: {
+          status: "FAILED",
+          error: (error as Error).message
         },
         timestamp: new Date().toISOString()
       });
