@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import type { Node } from "reactflow";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface NodeConfigPanelProps {
   node: Node;
@@ -16,6 +16,12 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
   const [executionMode, setExecutionMode] = useState(
     (node.data?.executionMode as string) ?? "sequential"
   );
+
+  useEffect(() => {
+    setLabel(node.data?.label ?? node.id);
+    setConfig(JSON.stringify(node.data?.config ?? {}, null, 2));
+    setExecutionMode((node.data?.executionMode as string) ?? "sequential");
+  }, [node]);
 
   return (
     <motion.aside

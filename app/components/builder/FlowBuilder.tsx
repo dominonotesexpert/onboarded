@@ -59,6 +59,40 @@ function FlowBuilderCanvas({
   const reactFlow = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const enforceSiblingExecutionModes = useCallback(
+    (updatedEdges: Edge[]) => {
+      const childMap = updatedEdges.reduce<Record<string, string[]>>((acc, edge) => {
+        if (!acc[edge.source]) acc[edge.source] = [];
+        acc[edge.source].push(edge.target);
+        return acc;
+      }, {});
+
+      const parallelTargets = new Set<string>();
+      const sequentialTargets = new Set<string>();
+
+      Object.values(childMap).forEach((children) => {
+        if (children.length > 1) {
+          children.forEach((id) => parallelTargets.add(id));
+        } else {
+          children.forEach((id) => sequentialTargets.add(id));
+        }
+      });
+
+      setNodes((prev) =>
+        prev.map((node) => {
+          if (parallelTargets.has(node.id)) {
+            return { ...node, data: { ...node.data, executionMode: "parallel" } };
+          }
+          if (sequentialTargets.has(node.id)) {
+            return { ...node, data: { ...node.data, executionMode: "sequential" } };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
   useEffect(() => {
     onChange?.({ nodes, edges });
   }, [nodes, edges, onChange]);
@@ -75,6 +109,14 @@ function FlowBuilderCanvas({
       }))
     );
   }, [nodeStatuses, setNodes]);
+
+  useEffect(() => {
+    if (!selectedNode) return;
+    const latest = nodes.find((n) => n.id === selectedNode.id);
+    if (latest && latest !== selectedNode) {
+      setSelectedNode(latest);
+    }
+  }, [nodes, selectedNode]);
 
   const spawnNode = useCallback(
     (type: string, position?: XYPosition) => {
@@ -136,18 +178,20 @@ function FlowBuilderCanvas({
   const handleConnect = useCallback(
     (connection: Parameters<typeof addEdge>[0]) => {
       if (!interactive) return;
-      setEdges((eds) =>
-        addEdge(
+      setEdges((eds) => {
+        const nextEdges = addEdge(
           {
             ...connection,
             animated: true,
             style: { stroke: "#38bdf8", strokeWidth: 2 }
           },
           eds
-        )
-      );
+        );
+        enforceSiblingExecutionModes(nextEdges);
+        return nextEdges;
+      });
     },
-    [interactive, setEdges]
+    [enforceSiblingExecutionModes, interactive, setEdges]
   );
 
   const handleNodeClick = useCallback(

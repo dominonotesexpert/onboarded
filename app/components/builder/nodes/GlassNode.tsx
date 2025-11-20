@@ -51,24 +51,28 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
         />
       ) : null}
       <div
-        className="absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -left-7 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
         onMouseEnter={(event) => handlePointer(event, "target")}
         onMouseLeave={() => setHoverHandle(null)}
       />
       <div
-        className="absolute -right-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -right-7 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full opacity-0 group-hover:opacity-40 transition-all cursor-crosshair"
         onMouseEnter={(event) => handlePointer(event, "source")}
         onMouseLeave={() => setHoverHandle(null)}
       />
       <Handle
         type="target"
         position={Position.Left}
-        className={`w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "target" ? "scale-125" : ""}`}
+        className={`w-4 h-4 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+          hoverHandle === "target" ? "scale-150" : ""
+        }`}
       />
       <Handle
         type="source"
         position={Position.Right}
-        className={`w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair ${hoverHandle === "source" ? "scale-125" : ""}`}
+        className={`w-4 h-4 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+          hoverHandle === "source" ? "scale-150" : ""
+        }`}
       />
 
       {canDelete ? (
