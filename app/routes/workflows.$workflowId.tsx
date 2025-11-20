@@ -6,7 +6,7 @@ import { getWorkflow } from "~/services/workflows/workflow.server";
 import { definitionToReactFlow } from "~/utils/workflow-transform";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
 import { ClientOnly } from "~/components/common/ClientOnly";
-import type { ExecutionDetail, WorkflowDefinition } from "~/types/workflow";
+import type { ExecutionDetail, WorkflowDefinition, TaskStatus } from "~/types/workflow";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!params.workflowId) {
@@ -115,6 +115,13 @@ export default function WorkflowDetailRoute() {
             onChange={(payload) => setDefinition(payload)}
             showPalette={false}
             interactive={false}
+            nodeStatuses={
+              executionDetail?.tasks
+                ? Object.fromEntries(
+                    executionDetail.tasks.map((task) => [task.nodeId, task.status as TaskStatus])
+                  )
+                : undefined
+            }
           />
         )}
       </ClientOnly>

@@ -4,7 +4,7 @@ import { Handle, Position } from "reactflow";
 import { useState, MouseEvent } from "react";
 
 interface GlassNodeProps extends NodeProps {
-  data: NodeProps["data"] & { onDelete?: (id: string) => void };
+  data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string };
 }
 
 export function GlassNode({ data, selected, id }: GlassNodeProps) {
@@ -13,6 +13,26 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const canDelete = typeof data.onDelete === "function";
   const [hoverHandle, setHoverHandle] = useState<"source" | "target" | null>(null);
+  const status = data.status as string | undefined;
+  const hasStatus = Boolean(status);
+
+  const statusStyles =
+    status === "RUNNING"
+      ? "border-amber-300/70 shadow-[0_0_0_3px_rgba(251,191,36,0.15)]"
+      : status === "SUCCESS"
+        ? "border-emerald-300/60 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+        : status === "FAILED"
+          ? "border-rose-300/70 shadow-[0_0_0_3px_rgba(244,63,94,0.18)]"
+          : "border-white/10";
+
+  const statusDot =
+    status === "RUNNING"
+      ? "bg-amber-300"
+      : status === "SUCCESS"
+        ? "bg-emerald-400"
+        : status === "FAILED"
+          ? "bg-rose-400"
+          : "";
 
   const handlePointer = (event: MouseEvent, type: "source" | "target") => {
     event.stopPropagation();
@@ -23,8 +43,13 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
     <motion.div
       initial={{ opacity: 0.9, scale: 0.95 }}
       animate={{ opacity: 1, scale: selected ? 1.02 : 1 }}
-      className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3 min-w-[190px] shadow-card relative group"
+      className={`rounded-2xl bg-white/5 backdrop-blur-xl px-4 py-3 min-w-[190px] shadow-card relative group transition border ${statusStyles}`}
     >
+      {hasStatus ? (
+        <span
+          className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-slate-900 ${statusDot} shadow-[0_0_0_6px_rgba(15,23,42,0.45)]`}
+        />
+      ) : null}
       <div
         className="absolute -left-5 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
         onMouseEnter={(event) => handlePointer(event, "target")}
@@ -63,12 +88,14 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
       <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">{data.type}</p>
       <p className="text-lg font-semibold text-white mt-1 leading-tight">{data.label}</p>
       <p className="text-xs text-white/70 leading-relaxed mt-1">{data.description}</p>
-      <span className="mt-3 inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-white/85 bg-white/10 border border-white/20 rounded-full px-3 py-1">
-        <span
-          className={`w-2 h-2 rounded-full ${mode === "parallel" ? "bg-emerald-400" : "bg-sky-400"}`}
-        />
-        {badge}
-      </span>
+      <div className="mt-3 flex items-center gap-2">
+        <span className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-white/85 bg-white/10 border border-white/20 rounded-full px-3 py-1">
+          <span
+            className={`w-2 h-2 rounded-full ${mode === "parallel" ? "bg-emerald-400" : "bg-sky-400"}`}
+          />
+          {badge}
+        </span>
+      </div>
 
       {confirmOpen ? (
         <div className="absolute inset-0 bg-slate-950/80 backdrop-blur rounded-2xl flex flex-col items-center justify-center space-y-3 text-center p-4 z-10">

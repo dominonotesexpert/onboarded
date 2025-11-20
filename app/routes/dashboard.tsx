@@ -1,16 +1,25 @@
 import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { listExecutions } from "~/services/execution/execution-service.server";
+import { listWorkflows } from "~/services/workflows/workflow.server";
 import { useEventSource } from "remix-utils/sse/react";
 
 export async function loader() {
   const executions = await listExecutions();
-  return json({ executions });
+  const workflows = await listWorkflows();
+  return json({ executions, workflows });
 }
 
 export default function DashboardRoute() {
-  const { executions } = useLoaderData<typeof loader>();
+  const { executions, workflows } = useLoaderData<typeof loader>();
+  const workflowNameById = useMemo(
+    () =>
+      Object.fromEntries(
+        workflows.map((wf) => [wf.id, wf.name ?? wf.id])
+      ),
+    [workflows]
+  );
   const [activeExecutionId, setActiveExecutionId] = useState(executions[0]?.id);
   const streamUrl = activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : undefined;
   const event = useEventSource(streamUrl as string);
@@ -36,7 +45,10 @@ export default function DashboardRoute() {
             className={`card text-left ${activeExecutionId === execution.id ? "border-blue-400/60" : ""}`}
           >
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">{execution.status}</p>
-            <p className="text-lg text-white font-semibold mt-1">{execution.workflowId}</p>
+            <p className="text-lg text-white font-semibold mt-1">
+              {workflowNameById[execution.workflowId] ?? execution.workflowId}
+            </p>
+            <p className="text-xs text-white/50 mt-1">{execution.workflowId}</p>
             <p className="text-xs text-white/60 mt-2">
               {execution.duration ? `${execution.duration} ms` : "Processing"}
             </p>

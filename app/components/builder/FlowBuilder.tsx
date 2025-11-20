@@ -21,6 +21,7 @@ import { NodeConfigPanel } from "./NodeConfigPanel";
 import { GlassNode } from "./nodes/GlassNode";
 import { nodeCatalog } from "~/constants/node-catalog";
 import { useToast } from "~/components/common/Toaster";
+import type { TaskStatus } from "~/types/workflow";
 
 const nodeTypes = { glass: GlassNode };
 
@@ -31,6 +32,7 @@ export interface FlowBuilderProps {
   showPalette?: boolean;
   showConfig?: boolean;
   interactive?: boolean;
+  nodeStatuses?: Record<string, TaskStatus>;
 }
 
 export function FlowBuilder(props: FlowBuilderProps) {
@@ -47,7 +49,8 @@ function FlowBuilderCanvas({
   onChange,
   showPalette = true,
   showConfig = true,
-  interactive = true
+  interactive = true,
+  nodeStatuses
 }: FlowBuilderProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -59,6 +62,19 @@ function FlowBuilderCanvas({
   useEffect(() => {
     onChange?.({ nodes, edges });
   }, [nodes, edges, onChange]);
+
+  useEffect(() => {
+    if (!nodeStatuses) return;
+    setNodes((prev) =>
+      prev.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          status: nodeStatuses[node.id]
+        }
+      }))
+    );
+  }, [nodeStatuses, setNodes]);
 
   const spawnNode = useCallback(
     (type: string, position?: XYPosition) => {
