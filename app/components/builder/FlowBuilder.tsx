@@ -21,7 +21,7 @@ import { NodeConfigPanel } from "./NodeConfigPanel";
 import { GlassNode } from "./nodes/GlassNode";
 import { nodeCatalog } from "~/constants/node-catalog";
 import { useToast } from "~/components/common/Toaster";
-import type { TaskStatus } from "~/types/workflow";
+import type { TaskStatus, WorkflowDefinition } from "~/types/workflow";
 import { reactFlowToDefinition } from "~/utils/workflow-transform";
 import { getValidationIssues } from "~/utils/workflow-validation";
 import { buildWorkflowGraph, buildExecutionLayers } from "~/utils/workflow-graph";
@@ -143,7 +143,7 @@ function FlowBuilderCanvas({
     if (!interactive) return;
     try {
       const definition = reactFlowToDefinition(nodes, edges);
-      const issues = getValidationIssues(definition as any);
+    const issues = getValidationIssues(definition as WorkflowDefinition);
       setInvalidNodeIds(new Set(issues.map((issue: { nodeId?: string }) => issue.nodeId).filter(Boolean) as string[]));
       setValidationMessage(issues[0]?.message ?? null);
     } catch (error) {
@@ -312,8 +312,8 @@ function FlowBuilderCanvas({
   }, [interactive, setEdges, setNodes]);
 
   const autoLayout = useCallback(() => {
-    const definition = reactFlowToDefinition(nodes, edges);
-    const graph = buildWorkflowGraph(definition as any);
+    const definition = reactFlowToDefinition(nodes, edges) as WorkflowDefinition;
+    const graph = buildWorkflowGraph(definition);
     const layers = buildExecutionLayers(graph);
     const spacingX = 260;
     const spacingY = 200;

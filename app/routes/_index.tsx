@@ -66,8 +66,9 @@ export default function IndexRoute() {
           </dl>
         </div>
 
-        <div className="glass p-4 border border-white/5 rounded-3xl shadow-2xl">
-          <div className="flex items-center justify-between p-4">
+        <div className="relative glass p-4 border border-white/5 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-white/0 to-white/5" />
+          <div className="flex items-center justify-between p-4 relative z-10">
             <div>
               <p className="text-xs uppercase text-white/50 tracking-[0.3em]">
                 Demo workflow
@@ -76,7 +77,7 @@ export default function IndexRoute() {
             </div>
             <span className="pill">Live Builder</span>
           </div>
-          <div className="h-[460px]">
+          <div className="h-[460px] relative z-10">
             <ClientOnly fallback={<div className="h-full w-full bg-black/20 rounded-3xl animate-pulse" />}>
               {() => (
                 <FlowBuilder
@@ -91,6 +92,7 @@ export default function IndexRoute() {
               )}
             </ClientOnly>
           </div>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/40" />
         </div>
       </section>
 
