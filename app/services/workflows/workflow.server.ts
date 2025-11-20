@@ -36,6 +36,10 @@ export async function getWorkflow(id: string) {
 export async function createWorkflow(input: z.infer<typeof workflowSchema>) {
   const data = workflowSchema.parse(input);
   if (isDemoMode()) {
+    const exists = demoWorkflows.some((wf) => wf.name === data.name);
+    if (exists) {
+      throw new Error("A workflow with this name already exists. Please choose another name.");
+    }
     const newWorkflow: WorkflowWithRelations = {
       id: `demo-${Date.now()}`,
       version: 1,
@@ -45,6 +49,11 @@ export async function createWorkflow(input: z.infer<typeof workflowSchema>) {
     };
     demoWorkflows.push(newWorkflow);
     return newWorkflow;
+  }
+
+  const existing = await prisma.workflow.findFirst({ where: { name: data.name } });
+  if (existing) {
+    throw new Error("A workflow with this name already exists. Please choose another name.");
   }
 
   const { definition, ...rest } = data;

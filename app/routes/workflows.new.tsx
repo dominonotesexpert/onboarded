@@ -3,10 +3,12 @@ import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import { definitionToReactFlow, reactFlowToDefinition } from "~/utils/workflow-transform";
 import { demoWorkflows } from "~/data/demo-workflows";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createWorkflow } from "~/services/workflows/workflow.server";
 import { ClientOnly } from "~/components/common/ClientOnly";
 import type { WorkflowDefinition } from "~/types/workflow";
+import { getValidationIssues } from "~/utils/workflow-validation";
+import { useToast } from "~/components/common/Toaster";
 
 export async function loader() {
   const template = demoWorkflows[0];
@@ -20,30 +22,66 @@ export async function action({ request }: ActionFunctionArgs) {
   const parsed = JSON.parse(String(formData.get("definition") ?? "{}"));
   const definition = reactFlowToDefinition(parsed.nodes ?? [], parsed.edges ?? []);
   const intent = String(formData.get("action") ?? "draft");
-  const workflow = await createWorkflow({
-    name: String(formData.get("name") ?? "Untitled Workflow"),
-    description: String(formData.get("description") ?? ""),
-    definition,
-    isDraft: intent !== "publish",
-    isPublished: intent === "publish"
-  });
 
-  if (intent === "publish") {
-    return redirect(`/workflows/${workflow.id}?status=published`);
+  try {
+    if (intent === "publish") {
+      const issues = getValidationIssues(definition as WorkflowDefinition);
+      if (issues.length > 0) {
+        return json(
+          { error: issues[0]?.message ?? "Workflow validation failed", issues },
+          { status: 400 }
+        );
+      }
+    }
+
+    const workflow = await createWorkflow({
+      name: String(formData.get("name") ?? "Untitled Workflow"),
+      description: String(formData.get("description") ?? ""),
+      definition,
+      isDraft: intent !== "publish",
+      isPublished: intent === "publish"
+    });
+
+    if (intent === "publish") {
+      return redirect(`/workflows/${workflow.id}?status=published`);
+    }
+
+    return json({ workflow }, { status: 201 });
+  } catch (error) {
+    const message = (error as Error)?.message ?? "Failed to save workflow";
+    return json({ error: message }, { status: 400 });
   }
-
-  return json({ workflow }, { status: 201 });
 }
 
 export default function NewWorkflowRoute() {
   const { workflow } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const { pushToast } = useToast();
+  const lastErrorRef = useRef<string | null>(null);
   const workflowDefinition = useMemo<WorkflowDefinition>(
     () =>
       (workflow.definition ?? { nodes: [], edges: [] }) as unknown as WorkflowDefinition,
     [workflow.definition]
   );
   const [definition, setDefinition] = useState(() => definitionToReactFlow(workflowDefinition));
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (actionData && "error" in actionData) {
+      const message = (actionData as { error: string }).error;
+      if (message !== lastErrorRef.current) {
+        lastErrorRef.current = message;
+        pushToast({
+          title: "Publish failed",
+          description: message
+        });
+        setBannerMessage(message);
+        setTimeout(() => {
+          setBannerMessage((current) => (current === message ? null : current));
+        }, 5000);
+      }
+    }
+  }, [actionData, pushToast]);
 
   return (
     <div className="px-8 py-10 space-y-8">
@@ -92,13 +130,26 @@ export default function NewWorkflowRoute() {
         />
       </Form>
 
-      {actionData?.workflow ? (
+      {actionData && "workflow" in actionData ? (
         <div className="card border-emerald-400/40">
           <p className="text-sm text-emerald-300">
-            Workflow saved (id: {actionData.workflow.id}). Continue editing whenever you&apos;re ready.
+            Workflow saved (id: {(actionData as { workflow: { id: string } }).workflow.id}). Continue
+            editing whenever you&apos;re ready.
           </p>
         </div>
       ) : null}
+      {/* {bannerMessage ? (
+        <div className="card border-rose-400/40 text-rose-200 text-sm flex items-start justify-between gap-3">
+          <span>{bannerMessage}</span>
+          <button
+            type="button"
+            className="text-rose-100/80 hover:text-rose-50"
+            onClick={() => setBannerMessage(null)}
+          >
+            ×
+          </button>
+        </div>
+      ) : null} */}
 
       <ClientOnly fallback={<div className="h-[640px] bg-white/5 rounded-3xl animate-pulse" />}>
         {() => (

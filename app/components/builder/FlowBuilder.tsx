@@ -598,7 +598,7 @@ function FlowBuilderCanvas({
               </button>
             </div>
             <div className="pointer-events-none absolute top-12 right-4 text-xs text-white/70 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 shadow-card">
-              Drag blocks into the canvas, then pull from a glowing handle to connect steps.
+              Drag blocks into the canvas, then pull from a cross to connect steps.
             </div>
             {selectedCounts.nodeCount + selectedCounts.edgeCount > 0 ? (
               <div className="pointer-events-none absolute top-3 left-3 text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 shadow-card">

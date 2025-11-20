@@ -112,7 +112,7 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
         type="target"
         position={Position.Left}
         ref={targetHandleRef}
-        className={`w-6 h-6 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+        className={`w-8 h-8 bg-sky-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
           hoverHandle === "target" ? "scale-150" : ""
         }`}
       />
@@ -120,7 +120,7 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
         type="source"
         position={Position.Right}
         ref={sourceHandleRef}
-        className={`w-6 h-6 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
+        className={`w-8 h-8 bg-indigo-400 border-2 border-slate-900 rounded-full shadow-glow cursor-crosshair transition-transform ${
           hoverHandle === "source" ? "scale-150" : ""
         }`}
       />
