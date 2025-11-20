@@ -41,7 +41,7 @@ export default function NewWorkflowRoute() {
 
   return (
     <div className="px-8 py-10 space-y-8">
-      <Form method="post" className="space-y-6">
+      <Form method="post" reloadDocument className="space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex-1 min-w-[240px]">
             {/* <p className="text-xs uppercase tracking-[0.4em] text-white/50">Builder</p>

@@ -91,6 +91,8 @@ export default function WorkflowDetailRoute() {
             initialNodes={definition.nodes}
             initialEdges={definition.edges}
             onChange={(payload) => setDefinition(payload)}
+            showPalette={false}
+            interactive={false}
           />
         )}
       </ClientOnly>
