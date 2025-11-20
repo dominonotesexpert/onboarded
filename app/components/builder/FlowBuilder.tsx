@@ -194,6 +194,35 @@ function FlowBuilderCanvas({
           });
           return;
         }
+
+        const wouldCreateCycle = () => {
+          const adjacency = new Map<string, string[]>();
+          edges.forEach((e) => {
+            if (!adjacency.has(e.source)) adjacency.set(e.source, []);
+            adjacency.get(e.source)!.push(e.target);
+          });
+          if (!adjacency.has(sourceId)) adjacency.set(sourceId, []);
+          adjacency.get(sourceId)!.push(targetId);
+
+          const stack = [targetId];
+          const seen = new Set<string>();
+          while (stack.length) {
+            const current = stack.pop()!;
+            if (current === sourceId) return true;
+            if (seen.has(current)) continue;
+            seen.add(current);
+            (adjacency.get(current) ?? []).forEach((next) => stack.push(next));
+          }
+          return false;
+        };
+
+        if (wouldCreateCycle()) {
+          pushToast({
+            title: "Cycle detected",
+            description: "That connection would create a loop. Please choose a different target."
+          });
+          return;
+        }
       }
 
       setEdges((eds) => {

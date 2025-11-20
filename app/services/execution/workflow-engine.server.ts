@@ -30,6 +30,7 @@ export interface WorkflowExecutionResult {
 }
 
 const defaultEmit: EmitExecutionEvent = () => undefined;
+const LOG_CONTEXT_LIMIT = 800;
 
 export async function runWorkflow(
   definition: WorkflowDefinition,
@@ -38,9 +39,11 @@ export async function runWorkflow(
   executionId?: string
 ): Promise<WorkflowExecutionResult> {
   const graph = buildWorkflowGraph(definition);
+  const maxConcurrency = 4;
   const sharedContext: Record<string, unknown> = structuredClone(payload ?? {});
   const completedResults: Record<string, TaskResult> = {};
   const outEvents: ExecutionEvent[] = [];
+  const persistLogs = Boolean(executionId) && !isDemoMode();
   const emitEvent = (event: Omit<ExecutionEvent, "timestamp">) => {
     const fullEvent: ExecutionEvent = {
       ...event,
@@ -54,6 +57,17 @@ export async function runWorkflow(
     type: "EXECUTION_STARTED",
     payload: { nodes: definition.nodes.length }
   });
+
+  if (persistLogs && executionId) {
+    await prisma.executionLog.create({
+      data: {
+        executionId,
+        level: "INFO",
+        message: "Execution started",
+        metadata: truncateJson({ nodeCount: definition.nodes.length })
+      }
+    });
+  }
 
   const indegree = new Map<string, number>();
   const activatedCounts = new Map<string, number>();
@@ -73,19 +87,52 @@ export async function runWorkflow(
     const batch = currentBatch;
     currentBatch = [];
 
-    const effects = batch.map((nodeId) =>
-      runNode(nodeId, {
-        graph,
-        payload,
-        sharedContext,
-        emitEvent,
-        visited,
-        completedResults,
-        executionId
-      })
+    const sequentialNodes = batch.filter(
+      (id) => (graph.nodes.get(id)?.executionMode ?? "sequential") === "sequential"
     );
+    const parallelNodes = batch.filter((id) => !sequentialNodes.includes(id));
 
-    const batchResults = await Promise.all(effects);
+    const runParams = {
+      graph,
+      payload,
+      sharedContext,
+      emitEvent,
+      visited,
+      completedResults,
+      executionId
+    };
+
+    const runLimitedParallel = async (ids: string[]) => {
+      const running = new Set<Promise<Awaited<ReturnType<typeof runNode>>>>();
+      const results: Promise<Awaited<ReturnType<typeof runNode>>>[] = [];
+      const queue = [...ids];
+
+      const launch = (id: string) => {
+        const task = runNode(id, runParams).finally(() => running.delete(task));
+        running.add(task);
+        results.push(task);
+      };
+
+      while (queue.length > 0 || running.size > 0) {
+        while (queue.length > 0 && running.size < maxConcurrency) {
+          const nextId = queue.shift();
+          if (nextId) launch(nextId);
+        }
+        if (running.size > 0) {
+          await Promise.race(Array.from(running));
+        }
+      }
+
+      return Promise.all(results);
+    };
+
+    const sequentialResults: Awaited<ReturnType<typeof runNode>>[] = [];
+    for (const nodeId of sequentialNodes) {
+      sequentialResults.push(await runNode(nodeId, runParams));
+    }
+
+    const parallelResults = await runLimitedParallel(parallelNodes);
+    const batchResults = [...sequentialResults, ...parallelResults];
 
     for (const { nodeId: ignoredNodeId, outgoingActivations } of batchResults) {
       for (const activation of outgoingActivations) {
@@ -108,6 +155,17 @@ export async function runWorkflow(
     type: "EXECUTION_COMPLETED",
     payload: { status: "COMPLETED" }
   });
+
+  if (persistLogs && executionId) {
+    await prisma.executionLog.create({
+      data: {
+        executionId,
+        level: "INFO",
+        message: "Execution completed",
+        metadata: truncateJson({ sharedContext })
+      }
+    });
+  }
 
   return {
     events: outEvents,
@@ -148,6 +206,15 @@ async function runNode(
   let taskRecordId: string | null = null;
 
   if (shouldPersist && params.executionId) {
+    await prisma.executionLog.create({
+      data: {
+        executionId: params.executionId,
+        level: "INFO",
+        message: `Task started: ${node.label ?? node.id}`,
+        metadata: truncateJson({ nodeId: node.id, type: node.type })
+      }
+    });
+
     const created = await prisma.taskExecution.create({
       data: {
         executionId: params.executionId,
@@ -175,6 +242,15 @@ async function runNode(
     });
 
     if (shouldPersist && taskRecordId) {
+      await prisma.executionLog.create({
+        data: {
+          executionId: params.executionId!,
+          level: "ERROR",
+          message: `Task failed: ${node.label ?? node.id}`,
+          metadata: truncateJson({ nodeId: node.id, error: (error as Error).message })
+        }
+      });
+
       await prisma.taskExecution.update({
         where: { id: taskRecordId },
         data: {
@@ -196,6 +272,19 @@ async function runNode(
   }
 
   if (shouldPersist && taskRecordId) {
+    await prisma.executionLog.create({
+      data: {
+        executionId: params.executionId!,
+        level: "INFO",
+        message: `Task completed: ${node.label ?? node.id}`,
+        metadata: truncateJson({
+          nodeId: node.id,
+          status: result.status,
+          durationMs: Date.now() - startedAt
+        })
+      }
+    });
+
     await prisma.taskExecution.update({
       where: { id: taskRecordId },
       data: {
@@ -317,4 +406,17 @@ function isRealConfig(config: Record<string, unknown>) {
   };
 
   return visit(config);
+}
+
+function truncateJson(value: Record<string, unknown>, limit = LOG_CONTEXT_LIMIT): Prisma.InputJsonValue {
+  try {
+    const str = JSON.stringify(value);
+    if (str.length <= limit) return value as Prisma.InputJsonValue;
+    return {
+      truncated: true,
+      preview: str.slice(0, limit)
+    } as Prisma.InputJsonValue;
+  } catch {
+    return { truncated: true, preview: "unserializable metadata" };
+  }
 }
