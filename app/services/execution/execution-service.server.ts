@@ -5,7 +5,13 @@ import { isDemoMode } from "~/utils/env.server";
 import { demoExecutions, demoWorkflows, demoExecutionDetails } from "~/data/demo-workflows";
 import { publishExecutionEvent } from "~/services/events/execution-hub.server";
 import { runWorkflow } from "./workflow-engine.server";
-import type { ExecutionSummary, ExecutionDetail, WorkflowDefinition } from "~/types/workflow";
+import { validateWorkflowDefinition } from "~/utils/workflow-validation";
+import type {
+  ExecutionSummary,
+  ExecutionDetail,
+  WorkflowDefinition,
+  ExecutionLogEntry
+} from "~/types/workflow";
 import { getWorkflow } from "../workflows/workflow.server";
 
 export async function triggerExecution(workflowId: string, input: Record<string, unknown>) {
@@ -26,6 +32,13 @@ export async function triggerExecution(workflowId: string, input: Record<string,
 
   if (!activeWorkflow) {
     throw new Response("Workflow not found", { status: 404 });
+  }
+
+  // Validate synchronously before scheduling
+  try {
+    validateWorkflowDefinition(activeWorkflow.definition as unknown as WorkflowDefinition);
+  } catch (error) {
+    throw new Response((error as Error).message, { status: 400 });
   }
 
   const executionId = `exec_${nanoid(10)}`;
@@ -114,7 +127,7 @@ export async function getExecution(executionId: string) {
 
   const execution = await prisma.execution.findUnique({
     where: { id: executionId },
-    include: { taskExecutions: true }
+    include: { taskExecutions: true, logs: { orderBy: { timestamp: "desc" }, take: 50 } }
   });
 
   if (!execution) return null;
@@ -137,6 +150,15 @@ export async function getExecution(executionId: string) {
       completedAt: task.completedAt?.toISOString(),
       output: task.output as unknown as Record<string, unknown> | null,
       error: task.error
-    }))
+    })),
+    logs:
+      execution.logs?.map((log) => ({
+        id: log.id,
+        level: log.level as ExecutionLogEntry["level"],
+        message: log.message,
+        timestamp: log.timestamp.toISOString(),
+        metadata: log.metadata as unknown as Record<string, unknown> | null,
+        taskId: log.taskId
+      })) ?? []
   } satisfies ExecutionDetail;
 }

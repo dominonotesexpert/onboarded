@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 interface GlassNodeProps extends NodeProps {
-  data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string };
+  data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string; invalid?: boolean };
 }
 
 export function GlassNode({ data, selected, id }: GlassNodeProps) {
@@ -18,15 +18,18 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
   const targetHandleRef = useRef<HTMLDivElement>(null);
   const status = data.status as string | undefined;
   const hasStatus = Boolean(status);
+  const invalid = Boolean(data.invalid);
 
   const statusStyles =
-    status === "RUNNING"
-      ? "border-amber-300/70 shadow-[0_0_0_3px_rgba(251,191,36,0.15)]"
-      : status === "SUCCESS"
-        ? "border-emerald-300/60 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
-        : status === "FAILED"
-          ? "border-rose-300/70 shadow-[0_0_0_3px_rgba(244,63,94,0.18)]"
-          : "border-white/10";
+    invalid
+      ? "border-rose-400/70 shadow-[0_0_0_3px_rgba(244,63,94,0.25)]"
+      : status === "RUNNING"
+        ? "border-amber-300/70 shadow-[0_0_0_3px_rgba(251,191,36,0.15)]"
+        : status === "SUCCESS"
+          ? "border-emerald-300/60 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+          : status === "FAILED"
+            ? "border-rose-300/70 shadow-[0_0_0_3px_rgba(244,63,94,0.18)]"
+            : "border-white/10";
 
   const statusDot =
     status === "RUNNING"
@@ -35,7 +38,9 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
         ? "bg-emerald-400"
         : status === "FAILED"
           ? "bg-rose-400"
-          : "";
+          : invalid
+            ? "bg-rose-400"
+            : "";
 
   const handlePointer = (event: ReactMouseEvent, type: "source" | "target") => {
     event.stopPropagation();

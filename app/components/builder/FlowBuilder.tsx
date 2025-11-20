@@ -22,6 +22,10 @@ import { GlassNode } from "./nodes/GlassNode";
 import { nodeCatalog } from "~/constants/node-catalog";
 import { useToast } from "~/components/common/Toaster";
 import type { TaskStatus } from "~/types/workflow";
+import { reactFlowToDefinition } from "~/utils/workflow-transform";
+import { getValidationIssues } from "~/utils/workflow-validation";
+import { buildWorkflowGraph, buildExecutionLayers } from "~/utils/workflow-graph";
+import type { EdgeMouseHandler } from "reactflow";
 
 const nodeTypes = { glass: GlassNode };
 
@@ -55,6 +59,13 @@ function FlowBuilderCanvas({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [invalidNodeIds, setInvalidNodeIds] = useState<Set<string>>(new Set());
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const historyRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([
+    { nodes: initialNodes, edges: initialEdges }
+  ]);
+  const historyIndexRef = useRef(0);
+  const applyingHistoryRef = useRef(false);
   const { pushToast } = useToast();
   const reactFlow = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -117,6 +128,28 @@ function FlowBuilderCanvas({
       setSelectedNode(latest);
     }
   }, [nodes, selectedNode]);
+
+  useEffect(() => {
+    if (!interactive) return;
+    if (applyingHistoryRef.current) return;
+    const snapshot = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) };
+    const history = historyRef.current.slice(0, historyIndexRef.current + 1);
+    history.push(snapshot);
+    historyRef.current = history.slice(-30); // cap history
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, [nodes, edges, interactive]);
+
+  useEffect(() => {
+    if (!interactive) return;
+    try {
+      const definition = reactFlowToDefinition(nodes, edges);
+      const issues = getValidationIssues(definition as any);
+      setInvalidNodeIds(new Set(issues.map((issue: { nodeId?: string }) => issue.nodeId).filter(Boolean) as string[]));
+      setValidationMessage(issues[0]?.message ?? null);
+    } catch (error) {
+      setValidationMessage((error as Error).message);
+    }
+  }, [edges, nodes, interactive]);
 
   const spawnNode = useCallback(
     (type: string, position?: XYPosition) => {
@@ -241,6 +274,65 @@ function FlowBuilderCanvas({
     [edges, enforceSiblingExecutionModes, interactive, pushToast, setEdges]
   );
 
+  const handleEdgeClick: EdgeMouseHandler = useCallback(
+    (_event, edge) => {
+      if (!interactive) return;
+      const confirmed = window.confirm("Remove this connection?");
+      if (!confirmed) return;
+      setEdges((current) => current.filter((e) => e.id !== edge.id));
+      pushToast({ title: "Connection removed", description: "Edge deleted from the workflow." });
+    },
+    [interactive, pushToast, setEdges]
+  );
+
+  const undo = useCallback(() => {
+    if (!interactive) return;
+    if (historyIndexRef.current <= 0) return;
+    historyIndexRef.current -= 1;
+    const snapshot = historyRef.current[historyIndexRef.current];
+    if (snapshot) {
+      applyingHistoryRef.current = true;
+      setNodes(snapshot.nodes);
+      setEdges(snapshot.edges);
+      applyingHistoryRef.current = false;
+    }
+  }, [interactive, setEdges, setNodes]);
+
+  const redo = useCallback(() => {
+    if (!interactive) return;
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    historyIndexRef.current += 1;
+    const snapshot = historyRef.current[historyIndexRef.current];
+    if (snapshot) {
+      applyingHistoryRef.current = true;
+      setNodes(snapshot.nodes);
+      setEdges(snapshot.edges);
+      applyingHistoryRef.current = false;
+    }
+  }, [interactive, setEdges, setNodes]);
+
+  const autoLayout = useCallback(() => {
+    const definition = reactFlowToDefinition(nodes, edges);
+    const graph = buildWorkflowGraph(definition as any);
+    const layers = buildExecutionLayers(graph);
+    const spacingX = 260;
+    const spacingY = 200;
+    const positioned = nodes.map((node) => {
+      const layerIdx = layers.findIndex((layer) => layer.includes(node.id));
+      const layer = layerIdx >= 0 ? layerIdx : 0;
+      const col = layerIdx >= 0 ? layers[layerIdx].indexOf(node.id) : 0;
+      return {
+        ...node,
+        position: {
+          x: col * spacingX,
+          y: layer * spacingY
+        }
+      };
+    });
+    setNodes(positioned);
+    pushToast({ title: "Auto-layout applied", description: "Nodes repositioned for readability." });
+  }, [edges, nodes, pushToast, setNodes]);
+
   const handleNodeClick = useCallback(
     (_event: unknown, node: Node) => {
       if (!interactive) return;
@@ -248,6 +340,81 @@ function FlowBuilderCanvas({
     },
     [interactive]
   );
+
+  const deleteSelection = useCallback(() => {
+    if (!interactive) return;
+    const selectedNodeIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    const selectedEdgeIds = new Set(edges.filter((e) => e.selected).map((e) => e.id));
+    if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) return;
+
+    setNodes((current) => current.filter((n) => !selectedNodeIds.has(n.id)));
+    setEdges((current) =>
+      current.filter(
+        (e) =>
+          !selectedEdgeIds.has(e.id) &&
+          !selectedNodeIds.has(e.source as string) &&
+          !selectedNodeIds.has(e.target as string)
+      )
+    );
+    pushToast({ title: "Deleted selection", description: "Nodes or edges were removed." });
+  }, [edges, interactive, nodes, pushToast, setEdges, setNodes]);
+
+  const duplicateSelection = useCallback(() => {
+    if (!interactive) return;
+    const selectedNodes = nodes.filter((n) => n.selected);
+    if (selectedNodes.length === 0) return;
+    const idMap = new Map<string, string>();
+    const offset = { x: 40, y: 40 };
+    const newNodes = selectedNodes.map((node) => {
+      const newId = nanoid();
+      idMap.set(node.id, newId);
+      return {
+        ...node,
+        id: newId,
+        position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+        selected: false,
+        data: { ...node.data, label: `${node.data?.label ?? node.id} copy` }
+      };
+    });
+    const newEdges = edges
+      .filter((edge) => edge.selected || (edge.source && edge.target && idMap.has(edge.source) && idMap.has(edge.target)))
+      .map((edge) => ({
+        ...edge,
+        id: `${edge.id}-${nanoid(4)}`,
+        source: idMap.get(edge.source as string) ?? edge.source,
+        target: idMap.get(edge.target as string) ?? edge.target,
+        selected: false
+      }));
+    setNodes((current) => [...current, ...newNodes]);
+    setEdges((current) => [...current, ...newEdges]);
+    pushToast({ title: "Duplicated selection", description: "Copied nodes (and edges) with offset." });
+  }, [edges, interactive, nodes, pushToast, setEdges, setNodes]);
+
+  useEffect(() => {
+    if (!interactive) return;
+    const handler = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      const isUndo = (event.metaKey || event.ctrlKey) && key === "z" && !event.shiftKey;
+      const isRedo = (event.metaKey || event.ctrlKey) && ((key === "z" && event.shiftKey) || key === "y");
+      const isDelete = key === "delete" || key === "backspace";
+      const isDuplicate = (event.metaKey || event.ctrlKey) && key === "d";
+      if (isUndo) {
+        event.preventDefault();
+        undo();
+      } else if (isRedo) {
+        event.preventDefault();
+        redo();
+      } else if (isDelete) {
+        event.preventDefault();
+        deleteSelection();
+      } else if (isDuplicate) {
+        event.preventDefault();
+        duplicateSelection();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [deleteSelection, duplicateSelection, interactive, redo, undo]);
 
   const handleUpdateNode = useCallback(
     (payload: Record<string, unknown>) => {
@@ -294,10 +461,11 @@ function FlowBuilderCanvas({
         type: "glass",
         data: {
           ...node.data,
-          onDelete: interactive ? deleteNode : undefined
+          onDelete: interactive ? deleteNode : undefined,
+          invalid: invalidNodeIds.has(node.id)
         }
       })),
-    [deleteNode, interactive, nodes]
+    [deleteNode, interactive, invalidNodeIds, nodes]
   );
 
   const edgeOptions = useMemo(
@@ -314,6 +482,46 @@ function FlowBuilderCanvas({
     []
   );
 
+  const decoratedEdges = useMemo(() => {
+    const colorForLabel = (label?: string) => {
+      if (!label) return "#38bdf8";
+      const lower = label.toLowerCase();
+      if (["yes", "true", "success"].includes(lower)) return "#22c55e";
+      if (["no", "false", "fail"].includes(lower)) return "#f472b6";
+      return "#38bdf8";
+    };
+    return edges.map((edge) => {
+      const stroke = colorForLabel(edge.label as string | undefined);
+      return {
+        ...edge,
+        animated: edge.animated ?? true,
+        style: {
+          stroke,
+          strokeWidth: 2
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: stroke
+        }
+      };
+    });
+  }, [edges]);
+
+  const selectedCounts = useMemo(() => {
+    const nodeCount = nodes.filter((n) => n.selected).length;
+    const edgeCount = edges.filter((e) => e.selected).length;
+    return { nodeCount, edgeCount };
+  }, [edges, nodes]);
+
+  const selectionBoxStyle = useMemo(
+    () => ({
+      backgroundColor: "rgba(59, 130, 246, 0.08)",
+      border: "1px solid rgba(59, 130, 246, 0.25)",
+      borderRadius: 12
+    }),
+    []
+  );
+
   const minHeightClass =
     showPalette || showConfig ? "min-h-[640px]" : "min-h-[420px]";
 
@@ -321,19 +529,29 @@ function FlowBuilderCanvas({
     <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card`}>
       {showPalette ? <NodePalette onAdd={(type) => spawnNode(type)} /> : null}
       <main className="flex-1 relative" ref={wrapperRef}>
+        {interactive && validationMessage ? (
+          <div className="absolute top-3 left-3 right-3 z-20">
+            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-100 text-xs px-3 py-2 shadow-card">
+              {validationMessage}
+            </div>
+          </div>
+        ) : null}
         <ReactFlow
           nodes={reactFlowNodes}
-          edges={edges}
+          edges={decoratedEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={handleNodeClick}
           onConnect={handleConnect}
+          onEdgeClick={handleEdgeClick}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={edgeOptions}
           connectionRadius={40}
           fitView
           onDrop={handleDrop}
           onDragOver={handleDragOver}
+          selectionOnDrag={interactive}
+          selectNodesOnDrag={interactive}
           snapToGrid
           snapGrid={[16, 16]}
           nodesDraggable={interactive}
@@ -355,9 +573,39 @@ function FlowBuilderCanvas({
           />
         </ReactFlow>
         {interactive ? (
-          <div className="pointer-events-none absolute top-4 right-4 text-xs text-white/70 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 shadow-card">
-            Drag blocks into the canvas, then pull from a glowing handle to connect steps.
-          </div>
+          <>
+            <div className="pointer-events-auto absolute top-3 right-3 flex gap-2 z-20">
+              <button
+                type="button"
+                onClick={undo}
+                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={redo}
+                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+              >
+                Redo
+              </button>
+              <button
+                type="button"
+                onClick={autoLayout}
+                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+              >
+                Auto Layout
+              </button>
+            </div>
+            <div className="pointer-events-none absolute top-12 right-4 text-xs text-white/70 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 shadow-card">
+              Drag blocks into the canvas, then pull from a glowing handle to connect steps.
+            </div>
+            {selectedCounts.nodeCount + selectedCounts.edgeCount > 0 ? (
+              <div className="pointer-events-none absolute top-3 left-3 text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 shadow-card">
+                Selected: {selectedCounts.nodeCount} node(s), {selectedCounts.edgeCount} edge(s)
+              </div>
+            ) : null}
+          </>
         ) : null}
       </main>
 

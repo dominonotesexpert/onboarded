@@ -5,6 +5,7 @@ import { isDemoMode } from "~/utils/env.server";
 import type { WorkflowDefinition } from "~/types/workflow";
 import { buildWorkflowGraph } from "~/utils/workflow-graph";
 import { getValueFromContext } from "~/utils/templates";
+import { getValidationIssues, validateWorkflowDefinition } from "~/utils/workflow-validation";
 import type { ExecutionContext, TaskResult } from "./node-handlers.server";
 import { resolveTaskHandler } from "./node-handlers.server";
 
@@ -32,12 +33,18 @@ export interface WorkflowExecutionResult {
 const defaultEmit: EmitExecutionEvent = () => undefined;
 const LOG_CONTEXT_LIMIT = 800;
 
+export interface ValidationIssue {
+  message: string;
+  nodeId?: string;
+}
+
 export async function runWorkflow(
   definition: WorkflowDefinition,
   payload: Record<string, unknown>,
   emit: EmitExecutionEvent = defaultEmit,
   executionId?: string
 ): Promise<WorkflowExecutionResult> {
+  validateWorkflowDefinition(definition);
   const graph = buildWorkflowGraph(definition);
   const maxConcurrency = 4;
   const sharedContext: Record<string, unknown> = structuredClone(payload ?? {});

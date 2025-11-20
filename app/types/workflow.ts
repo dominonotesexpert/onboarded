@@ -78,4 +78,14 @@ export interface ExecutionDetail extends ExecutionSummary {
   tasks?: TaskExecutionDetail[];
   output?: Record<string, unknown> | null;
   error?: string | null;
+  logs?: ExecutionLogEntry[];
+}
+
+export interface ExecutionLogEntry {
+  id: string;
+  level: "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL";
+  message: string;
+  timestamp: string;
+  metadata?: Record<string, unknown> | null;
+  taskId?: string | null;
 }

@@ -7,6 +7,7 @@ import { definitionToReactFlow } from "~/utils/workflow-transform";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
 import { ClientOnly } from "~/components/common/ClientOnly";
 import type { ExecutionDetail, WorkflowDefinition, TaskStatus } from "~/types/workflow";
+import { useEventSource } from "remix-utils/sse/react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!params.workflowId) {
@@ -30,8 +31,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const formData = await request.formData();
   const payload = JSON.parse(String(formData.get("input") ?? "{}"));
-  const execution = await triggerExecution(params.workflowId, payload ?? {});
-  return json(execution, { status: 202 });
+  try {
+    const execution = await triggerExecution(params.workflowId, payload ?? {});
+    return json(execution, { status: 202 });
+  } catch (error) {
+    const message = (error as Error).message ?? "Failed to start execution";
+    const status = error instanceof Response ? error.status : 400;
+    return json({ error: message }, { status });
+  }
 }
 
 export default function WorkflowDetailRoute() {
@@ -44,10 +51,14 @@ export default function WorkflowDetailRoute() {
   );
   const [definition, setDefinition] = useState(() => definitionToReactFlow(workflowDefinition));
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedExecutionId, setSelectedExecutionId] = useState(executions[0]?.id ?? null);
   const [executionDetail, setExecutionDetail] = useState<ExecutionDetail | null>(null);
+  const [liveStatuses, setLiveStatuses] = useState<Record<string, TaskStatus>>({});
 
   const detailFetcher = useFetcher<{ execution: ExecutionDetail }>();
+  const streamUrl = selectedExecutionId ? `/api/executions/${selectedExecutionId}/stream` : "";
+  const eventStream = useEventSource(streamUrl);
 
   useEffect(() => {
     if (selectedExecutionId) {
@@ -58,12 +69,34 @@ export default function WorkflowDetailRoute() {
   useEffect(() => {
     if (detailFetcher.data?.execution) {
       setExecutionDetail(detailFetcher.data.execution);
+      const taskStatuses =
+        detailFetcher.data.execution.tasks?.reduce<Record<string, TaskStatus>>((acc, task) => {
+          acc[task.nodeId] = task.status;
+          return acc;
+        }, {}) ?? {};
+      setLiveStatuses(taskStatuses);
     }
   }, [detailFetcher.data]);
 
   useEffect(() => {
+    if (!eventStream) return;
+    const parsed = JSON.parse(eventStream);
+    if (parsed.type === "TASK_STARTED") {
+      setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "RUNNING" as TaskStatus }));
+    } else if (parsed.type === "TASK_COMPLETED") {
+      setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "SUCCESS" as TaskStatus }));
+    } else if (parsed.type === "TASK_FAILED") {
+      setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "FAILED" as TaskStatus }));
+    }
+  }, [eventStream]);
+
+  useEffect(() => {
     if (fetcher.data && "executionId" in fetcher.data) {
       setStatusMessage(`Triggered execution ${fetcher.data.executionId}`);
+      setErrorMessage(null);
+    } else if (fetcher.data && "error" in fetcher.data) {
+      setErrorMessage(fetcher.data.error as string);
+      setStatusMessage(null);
     }
   }, [fetcher.data]);
 
@@ -102,6 +135,9 @@ export default function WorkflowDetailRoute() {
           Workflow published successfully.
         </div>
       ) : null}
+      {errorMessage ? (
+        <div className="card border border-rose-400/40 text-rose-200 text-sm">{errorMessage}</div>
+      ) : null}
       {statusMessage ? (
         <div className="card border border-emerald-400/40 text-emerald-200 text-sm">{statusMessage}</div>
       ) : null}
@@ -116,11 +152,13 @@ export default function WorkflowDetailRoute() {
             showPalette={false}
             interactive={false}
             nodeStatuses={
-              executionDetail?.tasks
-                ? Object.fromEntries(
-                    executionDetail.tasks.map((task) => [task.nodeId, task.status as TaskStatus])
-                  )
-                : undefined
+              Object.keys(liveStatuses).length > 0
+                ? liveStatuses
+                : executionDetail?.tasks
+                  ? Object.fromEntries(
+                      executionDetail.tasks.map((task) => [task.nodeId, task.status as TaskStatus])
+                    )
+                  : undefined
             }
           />
         )}
@@ -200,6 +238,39 @@ export default function WorkflowDetailRoute() {
                 ))}
                 {(executionDetail.tasks ?? []).length === 0 ? (
                   <p className="text-xs text-white/60">No task data available.</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-white/50">Logs</p>
+              <div className="space-y-2 max-h-64 overflow-auto">
+                {(executionDetail.logs ?? []).map((log) => (
+                  <div
+                    key={log.id}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`px-2 py-0.5 rounded-full border text-[10px] ${
+                          log.level === "ERROR" || log.level === "FATAL"
+                            ? "border-rose-400/50 text-rose-200"
+                            : log.level === "WARN"
+                              ? "border-amber-300/60 text-amber-200"
+                              : "border-white/20 text-white/80"
+                        }`}
+                      >
+                        {log.level}
+                      </span>
+                      <span className="text-white/50">
+                        {new Date(log.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="mt-1">{log.message}</p>
+                  </div>
+                ))}
+                {(executionDetail.logs ?? []).length === 0 ? (
+                  <p className="text-xs text-white/60">No logs recorded.</p>
                 ) : null}
               </div>
             </div>
