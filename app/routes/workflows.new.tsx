@@ -64,7 +64,6 @@ export default function NewWorkflowRoute() {
     [workflow.definition]
   );
   const [definition, setDefinition] = useState(() => definitionToReactFlow(workflowDefinition));
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (actionData && "error" in actionData) {
@@ -75,10 +74,6 @@ export default function NewWorkflowRoute() {
           title: "Publish failed",
           description: message
         });
-        setBannerMessage(message);
-        setTimeout(() => {
-          setBannerMessage((current) => (current === message ? null : current));
-        }, 5000);
       }
     }
   }, [actionData, pushToast]);
@@ -138,19 +133,6 @@ export default function NewWorkflowRoute() {
           </p>
         </div>
       ) : null}
-      {/* {bannerMessage ? (
-        <div className="card border-rose-400/40 text-rose-200 text-sm flex items-start justify-between gap-3">
-          <span>{bannerMessage}</span>
-          <button
-            type="button"
-            className="text-rose-100/80 hover:text-rose-50"
-            onClick={() => setBannerMessage(null)}
-          >
-            ×
-          </button>
-        </div>
-      ) : null} */}
-
       <ClientOnly fallback={<div className="h-[640px] bg-white/5 rounded-3xl animate-pulse" />}>
         {() => (
           <FlowBuilder

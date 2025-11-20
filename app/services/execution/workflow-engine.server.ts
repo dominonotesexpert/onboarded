@@ -5,7 +5,7 @@ import { isDemoMode } from "~/utils/env.server";
 import type { WorkflowDefinition } from "~/types/workflow";
 import { buildWorkflowGraph } from "~/utils/workflow-graph";
 import { getValueFromContext } from "~/utils/templates";
-import { getValidationIssues, validateWorkflowDefinition } from "~/utils/workflow-validation";
+import { validateWorkflowDefinition } from "~/utils/workflow-validation";
 import type { ExecutionContext, TaskResult } from "./node-handlers.server";
 import { resolveTaskHandler } from "./node-handlers.server";
 
@@ -431,25 +431,6 @@ async function executeWithPolicies(
   }
 
   throw lastError ?? new Error("Unknown execution failure");
-}
-
-function isRealConfig(config: Record<string, unknown>) {
-  if (!config || Object.keys(config).length === 0) return false;
-
-  const visit = (value: unknown): boolean => {
-    if (value == null) return false;
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return false;
-      return !trimmed.includes("{{");
-    }
-    if (typeof value === "number" || typeof value === "boolean") return true;
-    if (Array.isArray(value)) return value.some((item) => visit(item));
-    if (typeof value === "object") return Object.values(value as Record<string, unknown>).some((v) => visit(v));
-    return false;
-  };
-
-  return visit(config);
 }
 
 function truncateJson(value: Record<string, unknown>, limit = LOG_CONTEXT_LIMIT): Prisma.InputJsonValue {

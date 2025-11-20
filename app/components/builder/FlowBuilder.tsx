@@ -513,15 +513,6 @@ function FlowBuilderCanvas({
     return { nodeCount, edgeCount };
   }, [edges, nodes]);
 
-  const selectionBoxStyle = useMemo(
-    () => ({
-      backgroundColor: "rgba(59, 130, 246, 0.08)",
-      border: "1px solid rgba(59, 130, 246, 0.25)",
-      borderRadius: 12
-    }),
-    []
-  );
-
   const minHeightClass =
     showPalette || showConfig ? "min-h-[640px]" : "min-h-[420px]";
 

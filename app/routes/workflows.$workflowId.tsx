@@ -108,32 +108,30 @@ export default function WorkflowDetailRoute() {
 
   useEffect(() => {
     if (detailFetcher.data?.execution) {
-      setExecutionDetail(detailFetcher.data.execution);
-      // Keep the execution list in sync so cards/pills show the latest status and duration.
+      const exec = detailFetcher.data.execution;
+      setExecutionDetail(exec);
       setExecutionList((prev) => {
         const updated = prev.map((item) =>
-          item.id === detailFetcher.data?.execution.id
+          item.id === exec.id
             ? {
                 ...item,
-                status: detailFetcher.data.execution.status,
-                duration: detailFetcher.data.execution.duration,
-                completedAt: detailFetcher.data.execution.completedAt
+                status: exec.status,
+                duration: exec.duration,
+                completedAt: exec.completedAt
               }
             : item
         );
-        // If the execution was not previously in the list (rare), append it.
-        const exists = updated.some((item) => item.id === detailFetcher.data?.execution.id);
+        const exists = updated.some((item) => item.id === exec.id);
         if (exists) return updated;
-        const e = detailFetcher.data.execution;
         return [
           ...updated,
           {
-            id: e.id,
+            id: exec.id,
             workflowId: workflow.id,
-            status: e.status,
-            duration: e.duration,
-            startedAt: e.startedAt,
-            completedAt: e.completedAt
+            status: exec.status,
+            duration: exec.duration,
+            startedAt: exec.startedAt,
+            completedAt: exec.completedAt
           }
         ];
       });

@@ -1,8 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type {
+  Execution,
+  ExecutionLog,
+  PrismaClient,
+  TaskExecution
+} from "@prisma/client";
 
 vi.mock("~/lib/prisma.server", () => {
-  const execution: any = {
+  const execution: Execution & { taskExecutions: TaskExecution[]; logs: ExecutionLog[] } = {
     id: "exec_1",
     workflowId: "wf_1",
     status: "COMPLETED",
@@ -12,21 +17,31 @@ vi.mock("~/lib/prisma.server", () => {
     output: {},
     error: null,
     input: {},
+    context: {},
+    failedTaskId: null,
+    triggeredBy: null,
     taskExecutions: [
       {
         id: "task_1",
+        executionId: "exec_1",
         nodeId: "n1",
         status: "SUCCESS",
         duration: 50,
         startedAt: new Date("2024-01-01T00:00:00Z"),
         completedAt: new Date("2024-01-01T00:00:00.050Z"),
         output: {},
-        error: null
+        error: null,
+        input: {},
+        attempt: 1,
+        maxAttempts: 1,
+        createdAt: new Date("2024-01-01T00:00:00Z"),
+        stackTrace: null
       }
     ],
     logs: [
       {
         id: "log_1",
+        executionId: "exec_1",
         level: "INFO",
         message: "Execution started",
         timestamp: new Date("2024-01-01T00:00:00Z"),
@@ -35,6 +50,7 @@ vi.mock("~/lib/prisma.server", () => {
       },
       {
         id: "log_2",
+        executionId: "exec_1",
         level: "ERROR",
         message: "Oops",
         timestamp: new Date("2024-01-01T00:00:00.100Z"),
