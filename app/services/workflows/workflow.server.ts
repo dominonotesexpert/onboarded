@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "~/lib/prisma.server";
 import { isDemoMode } from "~/utils/env.server";
 import { demoWorkflows } from "~/data/demo-workflows";
@@ -46,8 +47,12 @@ export async function createWorkflow(input: z.infer<typeof workflowSchema>) {
     return newWorkflow;
   }
 
+  const { definition, ...rest } = data;
   return prisma.workflow.create({
-    data
+    data: {
+      ...rest,
+      definition: definition as unknown as Prisma.InputJsonValue
+    }
   });
 }
 
@@ -60,8 +65,45 @@ export async function updateWorkflow(id: string, input: Partial<z.infer<typeof w
     return existing;
   }
 
+  const { definition, ...rest } = data;
+  const prismaData: Prisma.WorkflowUpdateInput = {
+    ...rest,
+    ...(definition ? { definition: definition as unknown as Prisma.InputJsonValue } : {})
+  };
+
   return prisma.workflow.update({
     where: { id },
-    data
+    data: prismaData
   });
+}
+
+export async function deleteWorkflow(id: string) {
+  if (isDemoMode()) {
+    const idx = demoWorkflows.findIndex((wf) => wf.id === id);
+    if (idx >= 0) {
+      demoWorkflows.splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const executions = await tx.execution.findMany({
+      where: { workflowId: id },
+      select: { id: true }
+    });
+    const executionIds = executions.map((e) => e.id);
+
+    if (executionIds.length > 0) {
+      await tx.taskExecution.deleteMany({
+        where: { executionId: { in: executionIds } }
+      });
+      await tx.execution.deleteMany({
+        where: { id: { in: executionIds } }
+      });
+    }
+
+    await tx.workflow.delete({ where: { id } });
+  });
+  return true;
 }

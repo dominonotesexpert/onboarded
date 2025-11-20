@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { runWorkflow } from "../app/services/execution/workflow-engine.server";
+import type { WorkflowDefinition } from "../app/types/workflow";
 
-const sampleDefinition = {
+const sampleDefinition: WorkflowDefinition = {
   nodes: [
     {
       id: "start",

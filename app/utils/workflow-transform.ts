@@ -34,7 +34,7 @@ export function reactFlowToDefinition(nodes: Node[], edges: Edge[]): WorkflowDef
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      label: edge.label,
+      label: typeof edge.label === "string" ? edge.label : undefined,
       animated: edge.animated
     }))
   };

@@ -3,9 +3,10 @@ import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import { definitionToReactFlow, reactFlowToDefinition } from "~/utils/workflow-transform";
 import { demoWorkflows } from "~/data/demo-workflows";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createWorkflow } from "~/services/workflows/workflow.server";
 import { ClientOnly } from "~/components/common/ClientOnly";
+import type { WorkflowDefinition } from "~/types/workflow";
 
 export async function loader() {
   const template = demoWorkflows[0];
@@ -37,7 +38,12 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function NewWorkflowRoute() {
   const { workflow } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const [definition, setDefinition] = useState(() => definitionToReactFlow(workflow.definition));
+  const workflowDefinition = useMemo<WorkflowDefinition>(
+    () =>
+      (workflow.definition ?? { nodes: [], edges: [] }) as unknown as WorkflowDefinition,
+    [workflow.definition]
+  );
+  const [definition, setDefinition] = useState(() => definitionToReactFlow(workflowDefinition));
 
   return (
     <div className="px-8 py-10 space-y-8">

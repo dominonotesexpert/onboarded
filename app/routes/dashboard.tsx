@@ -12,9 +12,8 @@ export async function loader() {
 export default function DashboardRoute() {
   const { executions } = useLoaderData<typeof loader>();
   const [activeExecutionId, setActiveExecutionId] = useState(executions[0]?.id);
-  const event = useEventSource(
-    activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : null
-  );
+  const streamUrl = activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : undefined;
+  const event = useEventSource(streamUrl as string);
   const liveEvent = event ? JSON.parse(event) : null;
 
   return (

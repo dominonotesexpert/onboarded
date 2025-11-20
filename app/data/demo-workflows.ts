@@ -1,4 +1,4 @@
-import type { WorkflowWithRelations, ExecutionSummary } from "~/types/workflow";
+import type { WorkflowWithRelations, ExecutionSummary, ExecutionDetail } from "~/types/workflow";
 
 export const demoWorkflows: WorkflowWithRelations[] = [
   {
@@ -189,5 +189,105 @@ export const demoExecutions: ExecutionSummary[] = [
     duration: undefined,
     startedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     metrics: { successRate: 0.94 }
+  }
+];
+
+export const demoExecutionDetails: ExecutionDetail[] = [
+  {
+    id: "exec_1",
+    workflowId: "demo-employee-onboarding",
+    status: "COMPLETED",
+    duration: 3825,
+    startedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    completedAt: new Date(Date.now() - 1000 * 60 * 60 + 3825).toISOString(),
+    tasks: [
+      {
+        id: "task_start",
+        nodeId: "start",
+        label: "Trigger",
+        status: "SUCCESS",
+        startedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        completedAt: new Date(Date.now() - 1000 * 60 * 60 + 200).toISOString(),
+        duration: 200
+      },
+      {
+        id: "task_email",
+        nodeId: "email-welcome",
+        label: "Welcome Email",
+        status: "SUCCESS",
+        startedAt: new Date(Date.now() - 1000 * 60 * 60 + 200).toISOString(),
+        completedAt: new Date(Date.now() - 1000 * 60 * 60 + 1400).toISOString(),
+        duration: 1200,
+        output: { messageId: "msg_123", to: "newhire@example.com" }
+      },
+      {
+        id: "task_slack",
+        nodeId: "slack-notify",
+        label: "Slack Announcement",
+        status: "SUCCESS",
+        startedAt: new Date(Date.now() - 1000 * 60 * 60 + 1400).toISOString(),
+        completedAt: new Date(Date.now() - 1000 * 60 * 60 + 2200).toISOString(),
+        duration: 800,
+        output: { channel: "#welcome", ts: Date.now() }
+      },
+      {
+        id: "task_http",
+        nodeId: "http-ticket",
+        label: "Create IT Ticket",
+        status: "SUCCESS",
+        startedAt: new Date(Date.now() - 1000 * 60 * 60 + 2200).toISOString(),
+        completedAt: new Date(Date.now() - 1000 * 60 * 60 + 3825).toISOString(),
+        duration: 1625,
+        output: { ticketId: "IT-42" }
+      }
+    ]
+  },
+  {
+    id: "exec_2",
+    workflowId: "demo-employee-onboarding",
+    status: "FAILED",
+    duration: 1250,
+    startedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    completedAt: new Date(Date.now() - 1000 * 60 * 30 + 1250).toISOString(),
+    error: "HTTP request failed",
+    tasks: [
+      {
+        id: "task_start",
+        nodeId: "start",
+        label: "Trigger",
+        status: "SUCCESS",
+        duration: 200
+      },
+      {
+        id: "task_http",
+        nodeId: "http-ticket",
+        label: "Create IT Ticket",
+        status: "FAILED",
+        duration: 1050,
+        error: "Timeout"
+      }
+    ]
+  },
+  {
+    id: "exec_3",
+    workflowId: "demo-lead-routing",
+    status: "RUNNING",
+    startedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    tasks: [
+      {
+        id: "task_start",
+        nodeId: "start",
+        label: "Lead Created",
+        status: "SUCCESS",
+        duration: 150
+      },
+      {
+        id: "task_transform",
+        nodeId: "transform-score",
+        label: "Compute Score",
+        status: "RUNNING",
+        output: { score: 82 }
+      }
+    ]
   }
 ];

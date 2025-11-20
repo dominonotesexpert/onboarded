@@ -26,7 +26,7 @@ export default function IndexRoute() {
   const data = useLoaderData<typeof loader>();
   const { t } = useTranslation();
   const builderData = useMemo(
-    () => definitionToReactFlow(data.heroWorkflow.definition),
+    () => definitionToReactFlow(data.heroWorkflow.definition as unknown as import("~/types/workflow").WorkflowDefinition),
     [data.heroWorkflow.definition]
   );
 

@@ -29,7 +29,7 @@ export function NodePalette({ onAdd }: NodePaletteProps) {
             whileTap={{ scale: 0.97 }}
             onClick={() => onAdd(item.type)}
             draggable
-            onDragStart={(event) => handleDragStart(event as DragEvent<HTMLButtonElement>, item.type)}
+            onDragStartCapture={(event: DragEvent<HTMLButtonElement>) => handleDragStart(event, item.type)}
             className="w-full text-left rounded-2xl border border-white/10 p-4 bg-white/5 backdrop-blur flex flex-col gap-2"
           >
             <div className="flex items-center justify-between">

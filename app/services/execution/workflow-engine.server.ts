@@ -1,4 +1,7 @@
 import { Effect } from "effect";
+import { Prisma } from "@prisma/client";
+import { prisma } from "~/lib/prisma.server";
+import { isDemoMode } from "~/utils/env.server";
 import type { WorkflowDefinition } from "~/types/workflow";
 import { buildWorkflowGraph } from "~/utils/workflow-graph";
 import { getValueFromContext } from "~/utils/templates";
@@ -31,7 +34,8 @@ const defaultEmit: EmitExecutionEvent = () => undefined;
 export async function runWorkflow(
   definition: WorkflowDefinition,
   payload: Record<string, unknown>,
-  emit: EmitExecutionEvent = defaultEmit
+  emit: EmitExecutionEvent = defaultEmit,
+  executionId?: string
 ): Promise<WorkflowExecutionResult> {
   const graph = buildWorkflowGraph(definition);
   const sharedContext: Record<string, unknown> = structuredClone(payload ?? {});
@@ -70,7 +74,15 @@ export async function runWorkflow(
     currentBatch = [];
 
     const effects = batch.map((nodeId) =>
-      runNode(nodeId, { graph, payload, sharedContext, emitEvent, visited, completedResults })
+      runNode(nodeId, {
+        graph,
+        payload,
+        sharedContext,
+        emitEvent,
+        visited,
+        completedResults,
+        executionId
+      })
     );
 
     const batchResults = await Promise.all(effects);
@@ -113,6 +125,7 @@ async function runNode(
     emitEvent: (event: Omit<ExecutionEvent, "timestamp">) => void;
     visited: Set<string>;
     completedResults: Record<string, TaskResult>;
+    executionId?: string;
   }
 ) {
   const { graph, payload, sharedContext, emitEvent, visited, completedResults } = params;
@@ -130,23 +143,68 @@ async function runNode(
     payload: { nodeId: node.id, label: node.label, type: node.type }
   });
 
+  const shouldPersist = Boolean(params.executionId) && !isDemoMode() && isRealConfig(node.config);
+  const startedAt = Date.now();
+  let taskRecordId: string | null = null;
+
+  if (shouldPersist && params.executionId) {
+    const created = await prisma.taskExecution.create({
+      data: {
+        executionId: params.executionId,
+        nodeId: node.id,
+        status: "RUNNING",
+        input: payload as Prisma.InputJsonValue,
+        attempt: 1,
+        maxAttempts: Number(node.retries ?? 1),
+        startedAt: new Date(startedAt)
+      }
+    });
+    taskRecordId = created.id;
+  }
+
   const handler = resolveTaskHandler(node.type);
   const context: ExecutionContext = { input: payload, shared: sharedContext };
 
   const result = await executeWithPolicies(handler(node, context), {
     retries: Number(node.retries ?? 2),
     timeoutMs: Number(node.timeout ?? 5_000)
-  }).catch((error) => {
+  }).catch(async (error) => {
     emitEvent({
       type: "TASK_FAILED",
       payload: { nodeId: node.id, message: (error as Error).message }
     });
+
+    if (shouldPersist && taskRecordId) {
+      await prisma.taskExecution.update({
+        where: { id: taskRecordId },
+        data: {
+          status: "FAILED",
+          error: (error as Error).message,
+          completedAt: new Date(),
+          duration: Date.now() - startedAt,
+          attempt: 1
+        }
+      });
+    }
+
     throw error;
   });
 
   if (result?.data) {
     sharedContext[node.id] = result.data;
     Object.assign(sharedContext, result.data);
+  }
+
+  if (shouldPersist && taskRecordId) {
+    await prisma.taskExecution.update({
+      where: { id: taskRecordId },
+      data: {
+        status: result.status === "SUCCESS" ? "SUCCESS" : "FAILED",
+        output: (result.data as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+        completedAt: new Date(),
+        duration: Date.now() - startedAt
+      }
+    });
   }
 
   completedResults[node.id] = result;
@@ -240,4 +298,23 @@ async function executeWithPolicies(
   }
 
   throw lastError ?? new Error("Unknown execution failure");
+}
+
+function isRealConfig(config: Record<string, unknown>) {
+  if (!config || Object.keys(config).length === 0) return false;
+
+  const visit = (value: unknown): boolean => {
+    if (value == null) return false;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return false;
+      return !trimmed.includes("{{");
+    }
+    if (typeof value === "number" || typeof value === "boolean") return true;
+    if (Array.isArray(value)) return value.some((item) => visit(item));
+    if (typeof value === "object") return Object.values(value as Record<string, unknown>).some((v) => visit(v));
+    return false;
+  };
+
+  return visit(config);
 }

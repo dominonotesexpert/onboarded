@@ -61,3 +61,21 @@ export interface ExecutionSummary {
   completedAt?: string;
   metrics?: Record<string, unknown>;
 }
+
+export interface TaskExecutionDetail {
+  id: string;
+  nodeId: string;
+  status: TaskStatus;
+  startedAt?: string;
+  completedAt?: string;
+  duration?: number;
+  output?: Record<string, unknown> | null;
+  error?: string | null;
+  label?: string;
+}
+
+export interface ExecutionDetail extends ExecutionSummary {
+  tasks?: TaskExecutionDetail[];
+  output?: Record<string, unknown> | null;
+  error?: string | null;
+}

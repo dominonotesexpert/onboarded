@@ -1,15 +1,30 @@
 import { nanoid } from "nanoid";
+import { Prisma } from "@prisma/client";
 import { prisma } from "~/lib/prisma.server";
 import { isDemoMode } from "~/utils/env.server";
-import { demoExecutions, demoWorkflows } from "~/data/demo-workflows";
+import { demoExecutions, demoWorkflows, demoExecutionDetails } from "~/data/demo-workflows";
 import { publishExecutionEvent } from "~/services/events/execution-hub.server";
 import { runWorkflow } from "./workflow-engine.server";
-import type { ExecutionSummary } from "~/types/workflow";
+import type { ExecutionSummary, ExecutionDetail, WorkflowDefinition } from "~/types/workflow";
 import { getWorkflow } from "../workflows/workflow.server";
 
 export async function triggerExecution(workflowId: string, input: Record<string, unknown>) {
-  const workflow = (await getWorkflow(workflowId)) ?? demoWorkflows[0];
+  const workflow = await getWorkflow(workflowId);
+
   if (!workflow) {
+    if (isDemoMode()) {
+      // Fallback to first demo workflow in demo mode for convenience.
+      if (!demoWorkflows.length) {
+        throw new Response("Workflow not found", { status: 404 });
+      }
+    } else {
+      throw new Response("Workflow not found", { status: 404 });
+    }
+  }
+
+  const activeWorkflow = workflow ?? demoWorkflows[0];
+
+  if (!activeWorkflow) {
     throw new Response("Workflow not found", { status: 404 });
   }
 
@@ -24,9 +39,10 @@ export async function triggerExecution(workflowId: string, input: Record<string,
   setTimeout(async () => {
     try {
       const result = await runWorkflow(
-        workflow.definition,
+        activeWorkflow.definition as unknown as WorkflowDefinition,
         input,
-        (event) => publishExecutionEvent(executionId, event)
+        (event) => publishExecutionEvent(executionId, event),
+        executionId
       );
       publishExecutionEvent(executionId, {
         type: "EXECUTION_COMPLETED",
@@ -53,7 +69,7 @@ export async function triggerExecution(workflowId: string, input: Record<string,
         id: executionId,
         workflowId,
         status: "RUNNING",
-        input
+        input: input as Prisma.InputJsonValue
       }
     });
   }
@@ -89,8 +105,38 @@ export async function listExecutions(workflowId?: string): Promise<ExecutionSumm
 
 export async function getExecution(executionId: string) {
   if (isDemoMode()) {
-    return demoExecutions.find((execution) => execution.id === executionId) ?? null;
+    return (
+      demoExecutionDetails.find((execution) => execution.id === executionId) ??
+      demoExecutions.find((execution) => execution.id === executionId) ??
+      null
+    );
   }
 
-  return prisma.execution.findUnique({ where: { id: executionId } });
+  const execution = await prisma.execution.findUnique({
+    where: { id: executionId },
+    include: { taskExecutions: true }
+  });
+
+  if (!execution) return null;
+
+  return {
+    id: execution.id,
+    workflowId: execution.workflowId,
+    status: execution.status,
+    duration: execution.duration ?? undefined,
+    startedAt: execution.startedAt.toISOString(),
+    completedAt: execution.completedAt?.toISOString(),
+    output: execution.output as unknown as Record<string, unknown> | null,
+    error: execution.error,
+    tasks: execution.taskExecutions.map((task) => ({
+      id: task.id,
+      nodeId: task.nodeId,
+      status: task.status,
+      duration: task.duration ?? undefined,
+      startedAt: task.startedAt.toISOString(),
+      completedAt: task.completedAt?.toISOString(),
+      output: task.output as unknown as Record<string, unknown> | null,
+      error: task.error
+    }))
+  } satisfies ExecutionDetail;
 }

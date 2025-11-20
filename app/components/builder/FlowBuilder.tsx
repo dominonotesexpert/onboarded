@@ -9,6 +9,7 @@ import ReactFlow, {
   useNodesState,
   useReactFlow,
   MarkerType,
+  ConnectionLineType,
   type Node,
   type Edge,
   type XYPosition
@@ -236,7 +237,7 @@ function FlowBuilderCanvas({
           zoomOnDoubleClick={interactive}
           zoomOnPinch={interactive}
           connectionLineStyle={{ stroke: "#38bdf8", strokeWidth: 2 }}
-          connectionLineType="smoothstep"
+          connectionLineType={ConnectionLineType.SmoothStep}
           className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
         >
           <Background gap={24} size={1.5} color="#ffffff12" />
