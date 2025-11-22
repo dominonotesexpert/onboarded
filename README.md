@@ -3,11 +3,43 @@
 FlowForge is a Remix + React Flow visual builder backed by a Prisma data model and an Effect-powered execution engine. It lets you drag-and-drop workflows, run them with retries/timeouts, and monitor executions in real time with SSE updates.
 
 ### Features
-- Visual workflow builder (React Flow) with node library (Start/End, Email, Slack, HTTP, Delay, Conditional, Transform/Webhook).
-- Publish and re-open workflows for editing; drafts and published states stored in Postgres.
-- Execution engine with DAG traversal, parallel/sequential branches, retries/timeouts per node, and persisted task logs.
-- Real-time dashboards and detail pages that stream live execution events via SSE.
-- Email sending over SMTP (AWS SES-compatible); HTTP/Slack mock handlers for demo, overridable by config.
+
+#### 🎨 Visual Workflow Builder
+- **Drag-and-drop interface** powered by React Flow with intuitive node-based editing
+- **Comprehensive node library**: Start/End, Email, Slack, HTTP, Delay, Conditional, Transform, and Webhook
+- **Smart layout tools**: Auto-layout, undo/redo, and darg-drop node placement for clean workflow diagrams
+- **Live validation**: Real-time feedback on node configuration and workflow structure
+- **Template support**: Use `{{ variable }}` syntax in email addresses, URLs, and message bodies
+
+#### ⚙️ Workflow Management
+- **Draft & publish workflow**: Save work-in-progress drafts or publish production-ready workflows
+- **Version control**: Track workflow versions with full edit history
+- **Cycle detection**: Prevents invalid workflows with built-in DAG validation
+- **Custom node configuration**: Configure each node with JSON-based settings
+- **Persistent storage**: All workflows stored in PostgreSQL with Prisma ORM
+
+#### 🚀 Powerful Execution Engine
+- **DAG-based traversal**: Executes workflows as directed acyclic graphs
+- **Parallel & sequential execution**: Smart branching with automatic sibling detection
+- **Retry mechanism**: Configurable retries per node (default: 3 attempts)
+- **Timeout protection**: Per-node timeout settings (default: 30 seconds)
+- **Task prioritization**: Priority-based execution ordering
+- **Comprehensive logging**: Detailed execution logs with timestamps and metadata
+
+#### 📊 Real-time Monitoring
+- **Live execution dashboard**: Monitor all running workflows in real-time
+- **Server-Sent Events (SSE)**: Stream execution updates without polling
+- **Task status tracking**: Visual indicators for pending, running, success, failed, and timeout states
+- **Execution history**: Full audit trail of all workflow runs with filtering
+- **Error reporting**: Detailed error messages and stack traces for failed tasks
+
+#### 📧 Built-in Integrations
+- **Email**: SMTP integration with AWS SES compatibility, template support, and HTML rendering
+- **HTTP**: REST API calls with configurable methods, headers, and request bodies
+- **Slack**: Message notifications to channels (mock handler for demo)
+- **Webhooks**: Trigger external services with POST requests
+- **Conditional logic**: Branch workflows based on expression evaluation (using secure expr-eval parser)
+- **Data transformation**: Map and transform data between workflow steps
 
 ### Stack
 - UI: Remix (SSR), React 18, React Flow, Tailwind, Framer Motion.
@@ -56,6 +88,30 @@ Email nodes use SMTP; if unset they will fail. Demo mode skips persistence.
 - `GET /api/executions/:executionId/stream` – SSE stream of execution events
 
 ### Usage Notes
-- Builder validation runs on save/publish; email nodes need `to`/`subject`; HTTP nodes need http/https URL (templates allowed).
-- Run Workflow button now disables while submitting to avoid duplicate runs.
-- Email nodes default to 0 retries; other nodes default to 2. Adjust per node with `retries`/`timeout` in config.
+
+#### Validation Rules
+- **Email nodes**: Require valid `to` email address and `subject` field (templates with `{{ }}` are allowed)
+- **HTTP nodes**: Must use `http://` or `https://` protocol (templates allowed)
+- **Slack nodes**: Require a `channel` field
+- **Delay nodes**: Require `durationMs` field (milliseconds)
+- **Conditional nodes**: Require an `expression` field for branching logic
+- **Workflow structure**: Must be a valid DAG (no cycles allowed)
+
+#### Retry & Timeout Configuration
+- **Default retries**: 3 attempts per node (configurable per node)
+- **Default timeout**: 30 seconds per node (configurable per node)
+- **Email nodes**: Use 0 retries by default to prevent duplicate emails
+- **Custom settings**: Adjust `retries`, `timeout`, and `priority` in node config panel
+
+#### Security Features
+- **Safe expression evaluation**: Conditional nodes use `expr-eval` library (prevents code injection)
+- **Template rendering**: Supports `{{ variable }}` syntax for dynamic content
+- **Error handling**: Comprehensive try-catch blocks in all API routes
+- **Database integrity**: Cascade deletes prevent orphaned execution records
+
+#### Best Practices
+- **Save frequently**: Use "Save Draft" to preserve work without publishing
+- **Test workflows**: Run test executions before publishing to production
+- **Monitor executions**: Check the dashboard for real-time execution status
+- **Review logs**: Examine execution logs to debug failed workflows
+- **Use templates**: Leverage `{{ context.field }}` for dynamic email/HTTP content
