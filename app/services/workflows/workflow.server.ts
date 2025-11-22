@@ -1,3 +1,31 @@
+/**
+ * Workflow Service
+ *
+ * This module provides the data access layer for workflow CRUD operations.
+ * It serves as the bridge between API routes and the database/demo data.
+ *
+ * **Key Responsibilities:**
+ * 1. Workflow CRUD operations (Create, Read, Update, Delete)
+ * 2. Input validation using Zod schemas
+ * 3. Demo mode vs production mode data handling
+ * 4. Cascade deletion of workflow dependencies (executions, tasks)
+ * 5. Name uniqueness validation
+ *
+ * **Demo Mode vs Production:**
+ * - Demo mode: Uses in-memory array (demoWorkflows)
+ * - Production: Persists to PostgreSQL via Prisma
+ * - Controlled by FLOWFORGE_DEMO_MODE environment variable
+ *
+ * **Database Schema:**
+ * ```
+ * Workflow (1) → (N) Execution → (N) TaskExecution
+ *                              → (N) ExecutionLog
+ * ```
+ * Deletion uses cascading to clean up all related records.
+ *
+ * @module workflow.server
+ */
+
 import { Prisma } from "@prisma/client";
 import { prisma } from "~/lib/prisma.server";
 import { isDemoMode } from "~/utils/env.server";
@@ -5,6 +33,18 @@ import { demoWorkflows } from "~/data/demo-workflows";
 import type { WorkflowDefinition, WorkflowWithRelations } from "~/types/workflow";
 import { z } from "zod";
 
+/**
+ * Zod validation schema for workflow input data.
+ *
+ * **Validation Rules:**
+ * - name: Required, 1-80 characters (must be unique)
+ * - description: Optional, max 240 characters
+ * - definition: WorkflowDefinition object (nodes + edges)
+ * - isPublished: Optional boolean (default: false)
+ * - isDraft: Optional boolean (default: true)
+ *
+ * This schema is used by both createWorkflow() and updateWorkflow().
+ */
 const workflowSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(240).optional(),
@@ -13,6 +53,31 @@ const workflowSchema = z.object({
   isDraft: z.boolean().optional()
 });
 
+/**
+ * List all workflows ordered by most recently updated.
+ *
+ * **Query Behavior:**
+ * - Returns all workflows in the system
+ * - Ordered by updatedAt DESC (most recent first)
+ * - No pagination (consider adding for large datasets)
+ *
+ * **Demo Mode:**
+ * - Returns in-memory demoWorkflows array
+ * - Useful for testing without database setup
+ *
+ * **Production Mode:**
+ * - Queries PostgreSQL via Prisma
+ * - Includes all workflow metadata (name, description, published status, etc.)
+ *
+ * @returns Array of workflows with metadata
+ *
+ * @example
+ * ```typescript
+ * const workflows = await listWorkflows();
+ * console.log(`Found ${workflows.length} workflows`);
+ * workflows.forEach(wf => console.log(`- ${wf.name} (${wf.id})`));
+ * ```
+ */
 export async function listWorkflows(): Promise<WorkflowWithRelations[]> {
   if (isDemoMode()) {
     return demoWorkflows;
@@ -25,6 +90,35 @@ export async function listWorkflows(): Promise<WorkflowWithRelations[]> {
   return workflows as unknown as WorkflowWithRelations[];
 }
 
+/**
+ * Get a single workflow by ID.
+ *
+ * **Lookup Behavior:**
+ * - Returns workflow with all metadata if found
+ * - Returns null if workflow doesn't exist
+ *
+ * **Demo Mode:**
+ * - Searches in-memory demoWorkflows array
+ * - Returns first match or null
+ *
+ * **Production Mode:**
+ * - Queries PostgreSQL via Prisma findUnique
+ * - Uses indexed lookup on primary key (fast)
+ *
+ * @param id - Workflow ID to look up
+ * @returns Workflow object or null if not found
+ *
+ * @example
+ * ```typescript
+ * const workflow = await getWorkflow('wf_123');
+ * if (workflow) {
+ *   console.log(`Found: ${workflow.name}`);
+ *   console.log(`Nodes: ${workflow.definition.nodes.length}`);
+ * } else {
+ *   console.log('Workflow not found');
+ * }
+ * ```
+ */
 export async function getWorkflow(id: string) {
   if (isDemoMode()) {
     return demoWorkflows.find((workflow) => workflow.id === id) ?? null;
