@@ -4,6 +4,8 @@ FlowForge is a Remix + React Flow visual builder backed by a Prisma data model a
 
 ### Features
 - Visual workflow builder (React Flow) with node library (Start/End, Email, Slack, HTTP, Delay, Conditional, Transform/Webhook).
+- Autolayout/undo/redo workflows layout/actions to make them easier to read/use.
+- You can custom node config with JSON schema.
 - Publish and re-open workflows for editing; drafts and published states stored in Postgres.
 - Execution engine with DAG traversal, parallel/sequential branches, retries/timeouts per node, and persisted task logs.
 - Real-time dashboards and detail pages that stream live execution events via SSE.
