@@ -1,6 +1,8 @@
 ## FlowForge – Visual Workflow Automation Engine
 
 FlowForge is a Remix + React Flow visual builder backed by a Prisma data model and an Effect-powered execution engine. It lets you drag-and-drop workflows, run them with retries/timeouts, and monitor executions in real time with SSE updates.
+<img width="1663" height="854" alt="image" src="https://github.com/user-attachments/assets/4a4bd001-8278-4bbc-a032-0df6c659e32f" />
+
 
 ### Features
 
