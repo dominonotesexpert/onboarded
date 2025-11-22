@@ -103,7 +103,7 @@ function WorkflowCard({
 
       <button
         type="button"
-        className="absolute top-4 right-4 p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
+        className="absolute bottom-4 right-4 p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
         onClick={(event) => {
           event.stopPropagation();
           event.preventDefault();

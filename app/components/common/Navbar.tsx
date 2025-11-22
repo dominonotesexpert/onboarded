@@ -49,6 +49,7 @@ export function Navbar() {
                   key={link.href}
                   to={link.href}
                   prefetch="intent"
+                  reloadDocument
                   className={`relative px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${active
                       ? "text-white bg-white/10 shadow-inner border border-white/5"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
