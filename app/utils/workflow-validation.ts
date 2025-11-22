@@ -42,6 +42,16 @@ export function getValidationIssues(definition: WorkflowDefinition): ValidationI
             nodeId: node.id
           });
         }
+        if (node.config && (node.config as Record<string, unknown>)["to"]) {
+          const to = String((node.config as Record<string, unknown>)["to"]).trim();
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(to)) {
+            issues.push({
+              message: `Email node "${node.label ?? node.id}" must have a valid "to" email address.`,
+              nodeId: node.id
+            });
+          }
+        }
         break;
       case "SLACK":
         if (!node.config || !(node.config as Record<string, unknown>)["channel"]) {
@@ -57,6 +67,23 @@ export function getValidationIssues(definition: WorkflowDefinition): ValidationI
             message: `HTTP node "${node.label ?? node.id}" requires a "url".`,
             nodeId: node.id
           });
+        }
+        if (node.config && (node.config as Record<string, unknown>)["url"]) {
+          const rawUrl = String((node.config as Record<string, unknown>)["url"]).trim();
+          try {
+            const parsed = new URL(rawUrl);
+            if (!/^https?:$/i.test(parsed.protocol)) {
+              issues.push({
+                message: `HTTP node "${node.label ?? node.id}" must use http or https URL.`,
+                nodeId: node.id
+              });
+            }
+          } catch {
+            issues.push({
+              message: `HTTP node "${node.label ?? node.id}" has an invalid URL format.`,
+              nodeId: node.id
+            });
+          }
         }
         break;
       case "DELAY":

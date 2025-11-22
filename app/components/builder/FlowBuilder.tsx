@@ -61,6 +61,8 @@ function FlowBuilderCanvas({
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [invalidNodeIds, setInvalidNodeIds] = useState<Set<string>>(new Set());
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [showValidationMessage, setShowValidationMessage] = useState(true);
+  const [hasEdited, setHasEdited] = useState(false);
   const historyRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([
     { nodes: initialNodes, edges: initialEdges }
   ]);
@@ -141,19 +143,42 @@ function FlowBuilderCanvas({
 
   useEffect(() => {
     if (!interactive) return;
+    if (!hasEdited) {
+      setInvalidNodeIds(new Set());
+      setValidationMessage(null);
+      setShowValidationMessage(false);
+      return;
+    }
     try {
       const definition = reactFlowToDefinition(nodes, edges);
-    const issues = getValidationIssues(definition as WorkflowDefinition);
+      const issues = getValidationIssues(definition as WorkflowDefinition);
       setInvalidNodeIds(new Set(issues.map((issue: { nodeId?: string }) => issue.nodeId).filter(Boolean) as string[]));
-      setValidationMessage(issues[0]?.message ?? null);
+      const newMessage = issues[0]?.message ?? null;
+      setValidationMessage(newMessage);
+      if (newMessage) {
+        setShowValidationMessage(true);
+      }
     } catch (error) {
-      setValidationMessage((error as Error).message);
+      const errorMessage = (error as Error).message;
+      setValidationMessage(errorMessage);
+      if (errorMessage) {
+        setShowValidationMessage(true);
+      }
     }
-  }, [edges, nodes, interactive]);
+  }, [edges, hasEdited, nodes, interactive]);
+
+  useEffect(() => {
+    if (!validationMessage || !showValidationMessage) return;
+    const timer = setTimeout(() => {
+      setShowValidationMessage(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [validationMessage, showValidationMessage]);
 
   const spawnNode = useCallback(
     (type: string, position?: XYPosition) => {
       if (!interactive) return;
+      setHasEdited(true);
       const catalog = nodeCatalog.find((node) => node.type === type);
       const basePosition =
         position ??
@@ -258,6 +283,7 @@ function FlowBuilderCanvas({
         }
       }
 
+      setHasEdited(true);
       setEdges((eds) => {
         const nextEdges = addEdge(
           {
@@ -279,6 +305,7 @@ function FlowBuilderCanvas({
       if (!interactive) return;
       const confirmed = window.confirm("Remove this connection?");
       if (!confirmed) return;
+      setHasEdited(true);
       setEdges((current) => current.filter((e) => e.id !== edge.id));
       pushToast({ title: "Connection removed", description: "Edge deleted from the workflow." });
     },
@@ -347,6 +374,7 @@ function FlowBuilderCanvas({
     const selectedEdgeIds = new Set(edges.filter((e) => e.selected).map((e) => e.id));
     if (selectedNodeIds.size === 0 && selectedEdgeIds.size === 0) return;
 
+    setHasEdited(true);
     setNodes((current) => current.filter((n) => !selectedNodeIds.has(n.id)));
     setEdges((current) =>
       current.filter(
@@ -363,6 +391,7 @@ function FlowBuilderCanvas({
     if (!interactive) return;
     const selectedNodes = nodes.filter((n) => n.selected);
     if (selectedNodes.length === 0) return;
+    setHasEdited(true);
     const idMap = new Map<string, string>();
     const offset = { x: 40, y: 40 };
     const newNodes = selectedNodes.map((node) => {
@@ -393,6 +422,16 @@ function FlowBuilderCanvas({
   useEffect(() => {
     if (!interactive) return;
     const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isTyping =
+        target?.isContentEditable ||
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        tag === "option";
+      if (isTyping) return;
+
       const key = event.key.toLowerCase();
       const isUndo = (event.metaKey || event.ctrlKey) && key === "z" && !event.shiftKey;
       const isRedo = (event.metaKey || event.ctrlKey) && ((key === "z" && event.shiftKey) || key === "y");
@@ -417,26 +456,94 @@ function FlowBuilderCanvas({
   }, [deleteSelection, duplicateSelection, interactive, redo, undo]);
 
   const handleUpdateNode = useCallback(
-    (payload: Record<string, unknown>) => {
-      if (!selectedNode) return;
+    (payload: Record<string, unknown>): boolean => {
+      if (!selectedNode) return false;
+      setHasEdited(true);
+
+      // Create updated node data for validation
+      const updatedNodeData = {
+        ...selectedNode.data,
+        ...payload
+      };
+
+      // Validate the node type and config
+      const nodeType = selectedNode.data?.type as string;
+      const config = updatedNodeData.config as Record<string, unknown>;
+      let validationError: string | null = null;
+
+      switch (nodeType) {
+        case "EMAIL":
+          if (!config?.to || !config?.subject) {
+            validationError = `Email node "${updatedNodeData.label ?? selectedNode.id}" requires "to" and "subject".`;
+          } else {
+            const to = String(config.to).trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(to)) {
+              validationError = `Email node "${updatedNodeData.label ?? selectedNode.id}" must have a valid "to" email address.`;
+            }
+          }
+          break;
+        case "SLACK":
+          if (!config?.channel) {
+            validationError = `Slack node "${updatedNodeData.label ?? selectedNode.id}" requires a "channel".`;
+          }
+          break;
+        case "HTTP":
+          if (!config?.url) {
+            validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" requires a "url".`;
+          } else {
+            const rawUrl = String(config.url).trim();
+            try {
+              const parsed = new URL(rawUrl);
+              if (!/^https?:$/i.test(parsed.protocol)) {
+                validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" must use http or https URL.`;
+              }
+            } catch {
+              validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" has an invalid URL format.`;
+            }
+          }
+          break;
+        case "DELAY":
+          if (!config?.durationMs) {
+            validationError = `Delay node "${updatedNodeData.label ?? selectedNode.id}" requires "durationMs".`;
+          }
+          break;
+        case "CONDITIONAL":
+          if (!config?.expression) {
+            validationError = `Conditional node "${updatedNodeData.label ?? selectedNode.id}" requires an "expression".`;
+          }
+          break;
+      }
+
+      if (validationError) {
+        setValidationMessage(validationError);
+        setShowValidationMessage(true);
+        setInvalidNodeIds(new Set([selectedNode.id]));
+        return false;
+      }
+
       setNodes((current) => {
         const next = current.map((node) =>
           node.id === selectedNode.id
             ? {
                 ...node,
-                data: {
-                  ...node.data,
-                  ...payload
-                }
+                data: updatedNodeData
               }
             : node
         );
         const refreshed = next.find((node) => node.id === selectedNode.id) ?? null;
         setSelectedNode(refreshed);
+        setValidationMessage(null);
+        setShowValidationMessage(false);
+        pushToast({
+          title: "Node updated",
+          description: "Configuration saved to the workflow draft."
+        });
         return next;
       });
+      return true;
     },
-    [selectedNode, setNodes]
+    [pushToast, selectedNode, setNodes]
   );
 
   const deleteNode = useCallback(
@@ -446,12 +553,27 @@ function FlowBuilderCanvas({
       if (selectedNode?.id === nodeId) {
         setSelectedNode(null);
       }
+      setHasEdited(true);
       pushToast({
         title: "Node removed",
         description: "Any edges connected to this node were also deleted."
       });
     },
     [pushToast, selectedNode, setEdges, setNodes]
+  );
+
+  const handleNodesChange = useCallback(
+    (changes: Parameters<typeof onNodesChange>[0]) => {
+      onNodesChange(changes);
+    },
+    [onNodesChange]
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: Parameters<typeof onEdgesChange>[0]) => {
+      onEdgesChange(changes);
+    },
+    [onEdgesChange]
   );
 
   const reactFlowNodes = useMemo(
@@ -520,18 +642,28 @@ function FlowBuilderCanvas({
     <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card`}>
       {showPalette ? <NodePalette onAdd={(type) => spawnNode(type)} /> : null}
       <main className="flex-1 relative" ref={wrapperRef}>
-        {interactive && validationMessage ? (
-          <div className="absolute top-3 left-3 right-3 z-20">
-            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-100 text-xs px-3 py-2 shadow-card">
-              {validationMessage}
+        {interactive && hasEdited && validationMessage && showValidationMessage ? (
+          <div className="pointer-events-auto absolute top-3 left-64 right-64 z-30 flex justify-center">
+            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-100 text-xs px-4 py-2.5 shadow-card flex items-start gap-3 max-w-lg">
+              <span className="flex-1">{validationMessage}</span>
+              <button
+                type="button"
+                onClick={() => setShowValidationMessage(false)}
+                className="text-amber-200 hover:text-amber-50 transition-colors flex-shrink-0"
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
         ) : null}
         <ReactFlow
           nodes={reactFlowNodes}
           edges={decoratedEdges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          onNodesChange={handleNodesChange}
+          onEdgesChange={handleEdgesChange}
           onNodeClick={handleNodeClick}
           onConnect={handleConnect}
           onEdgeClick={handleEdgeClick}

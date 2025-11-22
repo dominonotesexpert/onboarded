@@ -172,7 +172,10 @@ export default function DashboardRoute() {
               <p className="text-white/80">Logs:</p>
               <div className="space-y-1">
                 {(executionDetail.logs ?? []).map((log) => (
-                  <div key={log.id} className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
+                  <div
+                    key={log.id}
+                    className="relative group rounded-md border border-white/10 bg-white/5 px-2 py-1"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] uppercase tracking-wide text-white/60">{log.level}</span>
                       <span className="text-[10px] text-white/50">
@@ -180,6 +183,22 @@ export default function DashboardRoute() {
                       </span>
                     </div>
                     <p className="text-white text-xs">{log.message}</p>
+                    {["ERROR", "FATAL"].includes(log.level) && log.metadata ? (
+                      <div className="pointer-events-none absolute left-0 top-full mt-2 z-50 bg-slate-900 border border-rose-400/70 text-rose-50 rounded-lg px-3 py-2 text-[11px] max-w-sm  shadow-glow  ring-1 ring-rose-400/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="font-semibold mb-1">Error details</p>
+                        {log.metadata?.error ? (
+                          <p className="whitespace-pre-wrap">Message: {String(log.metadata.error)}</p>
+                        ) : null}
+                        {log.metadata?.stack ? (
+                          <p className="whitespace-pre-wrap mt-1 text-white/70">
+                            Stack: {String(log.metadata.stack)}
+                          </p>
+                        ) : null}
+                        {!log.metadata?.error && !log.metadata?.stack ? (
+                          <p className="text-white/60">No additional metadata.</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
                 {(executionDetail.logs ?? []).length === 0 ? (

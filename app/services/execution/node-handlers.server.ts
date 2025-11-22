@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import type { WorkflowNodeDefinition, WorkflowNodeType } from "~/types/workflow";
 import { renderTemplateString } from "~/utils/templates";
+import { sendMail } from "~/lib/mailer.server";
 
 export interface ExecutionContext {
   input: Record<string, unknown>;
@@ -34,22 +35,38 @@ const handlers: Record<WorkflowNodeType, TaskHandler> = {
   EMAIL: (node, context) =>
     Effect.gen(function* () {
       const config = node.config as {
-        to: string;
-        subject: string;
-        body: string;
+        to?: string;
+        subject?: string;
+        body?: string;
+        from?: string;
       };
+      const to = renderTemplateString(config.to ?? "", context.shared).trim();
+      const subject = renderTemplateString(config.subject ?? "", context.shared).trim();
       const renderedBody = renderTemplateString(config.body ?? "", context.shared);
+      const textFallback = renderedBody.replace(/<[^>]+>/g, " ").trim() || renderedBody;
 
-      yield* delay(400);
+      if (!to || !subject) {
+        throw new Error("Email node requires 'to' and 'subject' values.");
+      }
+
+      const messageId = yield* Effect.promise(() =>
+        sendMail({
+          to,
+          subject,
+          html: renderedBody,
+          text: textFallback,
+          from: config.from
+        })
+      );
 
       return {
         status: "SUCCESS",
         data: {
           type: "email",
-          to: renderTemplateString(config.to ?? "", context.shared),
-          subject: renderTemplateString(config.subject ?? "", context.shared),
+          to,
+          subject,
           body: renderedBody,
-          messageId: `msg_${Date.now()}`
+          messageId
         }
       };
     }),

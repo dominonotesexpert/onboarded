@@ -331,7 +331,7 @@ export default function WorkflowDetailRoute() {
                   {(executionDetail.logs ?? []).map((log) => (
                     <div
                       key={log.id}
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80"
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 relative group"
                     >
                       <div className="flex items-center justify-between">
                         <span
@@ -355,6 +355,22 @@ export default function WorkflowDetailRoute() {
                           {log.metadata.error ? <p>Error: {String(log.metadata.error)}</p> : null}
                           {log.metadata.stack ? (
                             <p className="text-white/50">Stack: {String(log.metadata.stack)}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {["ERROR", "FATAL"].includes(log.level) && log.metadata ? (
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-2 translate-y-full bg-slate-950/95 border border-rose-400/40 text-rose-100 rounded-lg px-3 py-2 text-[11px] max-w-xs shadow-glow opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                          <p className="font-semibold mb-1">Error details</p>
+                          {log.metadata.error ? (
+                            <p className="whitespace-pre-wrap">Message: {String(log.metadata.error)}</p>
+                          ) : null}
+                          {log.metadata.stack ? (
+                            <p className="whitespace-pre-wrap mt-1 text-white/70">
+                              Stack: {String(log.metadata.stack)}
+                            </p>
+                          ) : null}
+                          {!log.metadata.error && !log.metadata.stack ? (
+                            <p className="text-white/60">No additional metadata.</p>
                           ) : null}
                         </div>
                       ) : null}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface NodeConfigPanelProps {
   node: Node;
   onClose: () => void;
-  onSave: (config: Record<string, unknown>) => void;
+  onSave: (config: Record<string, unknown>) => boolean | void;
 }
 
 export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps) {
@@ -75,7 +75,10 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
         onClick={() => {
           try {
             const parsed = JSON.parse(config);
-            onSave({ label, config: parsed, executionMode });
+            const success = onSave({ label, config: parsed, executionMode });
+            if (success !== false) {
+              onClose();
+            }
           } catch (error) {
             if (typeof window !== "undefined") {
               window.alert(`Invalid JSON: ${(error as Error).message}`);
