@@ -68,15 +68,15 @@ export default function App() {
   const data = useLoaderData<typeof loader>();
 
   return (
-    <html lang={data.locale} className="bg-midnight text-slate-100">
+    <html lang={data.locale} className="h-full">
       <head>
         <Meta />
         <Links />
       </head>
-      <body className="antialiased">
+      <body className="h-full bg-midnight text-slate-200 antialiased selection:bg-primary/30 selection:text-white">
         <Providers locale={data.locale} translations={data.translations}>
           <Navbar />
-          <main className="pb-16">
+          <main className="relative z-10 min-h-screen pb-16 pt-24">
             <Outlet />
           </main>
         </Providers>

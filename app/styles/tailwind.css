@@ -3,68 +3,86 @@
 @tailwind utilities;
 
 :root {
-  --color-midnight: #020617;
-  --color-ink: #0b1220;
+  --color-midnight: #02040a;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "Fira Code", "SFMono-Regular", monospace;
-  --radius-lg: 1rem;
-  --shadow-elevated: 0 20px 50px rgba(2, 6, 23, 0.45);
 }
 
 body {
-  @apply bg-midnight text-slate-100 font-sans min-h-screen;
-  background-image: radial-gradient(circle at top, rgba(59, 130, 246, 0.15), transparent 45%),
-    radial-gradient(circle at 20% 20%, rgba(236, 72, 153, 0.15), transparent 40%),
-    linear-gradient(135deg, rgba(5, 12, 31, 1) 0%, rgba(5, 12, 31, 0.9) 100%);
+  @apply bg-midnight text-slate-200 font-sans min-h-screen overflow-x-hidden;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 50%),
+    radial-gradient(circle at 0% 20%, rgba(139, 92, 246, 0.1), transparent 40%),
+    radial-gradient(circle at 100% 20%, rgba(236, 72, 153, 0.1), transparent 40%),
+    linear-gradient(to bottom, rgba(2, 4, 10, 0) 0%, rgba(2, 4, 10, 1) 100%);
+  background-attachment: fixed;
 }
 
-* {
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.gradient-border {
-  position: relative;
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.gradient-border::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(120deg, #3b82f6, #8b5cf6, #ec4899);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
-.glass {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(24px);
-  border-radius: 1rem;
-  box-shadow: 0 10px 45px rgba(2, 6, 23, 0.35);
-}
-
-.glow-ring {
-  box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @layer components {
-  .card {
-    @apply glass p-6 rounded-2xl border border-white/10 shadow-card;
+  .glass {
+    @apply bg-glass-medium backdrop-blur-xl border border-glass-border shadow-card;
   }
 
-  .pill {
-    @apply px-3 py-1 rounded-full text-xs uppercase tracking-wide bg-white/5 border border-white/10;
+  .glass-hover {
+    @apply hover:bg-glass-heavy hover:border-white/10 transition-all duration-300;
+  }
+
+  .card {
+    @apply glass rounded-2xl p-6 transition-all duration-300;
+  }
+
+  .card-interactive {
+    @apply card hover:shadow-card-hover hover:-translate-y-1 cursor-pointer;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-glow;
+    @apply btn bg-primary text-white shadow-glow hover:bg-blue-600 hover:shadow-glow-lg;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-semibold text-white/90 bg-white/10 border border-white/20;
+    @apply btn bg-glass-light text-white border border-glass-border hover:bg-glass-medium hover:border-white/20;
   }
+
+  .btn-ghost {
+    @apply btn text-slate-400 hover:text-white hover:bg-glass-light;
+  }
+
+  .input {
+    @apply bg-glass-light border border-glass-border rounded-xl px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+  }
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400;
+}
+
+.text-gradient-primary {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400;
 }

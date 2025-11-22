@@ -10,6 +10,8 @@ import type { ExecutionDetail, WorkflowDefinition, TaskStatus } from "~/types/wo
 import { useEventSource } from "remix-utils/sse/react";
 import { getValidationIssues } from "~/utils/workflow-validation";
 import { useToast } from "~/components/common/Toaster";
+import { Button } from "~/components/common/Button";
+import { Card } from "~/components/common/Card";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!params.workflowId) {
@@ -159,11 +161,11 @@ export default function WorkflowDetailRoute() {
         const updated = prev.map((item) =>
           item.id === exec.id
             ? {
-                ...item,
-                status: exec.status,
-                duration: exec.duration,
-                completedAt: exec.completedAt
-              }
+              ...item,
+              status: exec.status,
+              duration: exec.duration,
+              completedAt: exec.completedAt
+            }
             : item
         );
         const exists = updated.some((item) => item.id === exec.id);
@@ -229,32 +231,33 @@ export default function WorkflowDetailRoute() {
 
   useEffect(() => {
     if (saveFetcher.data && "error" in saveFetcher.data) {
-      pushToast({ title: "Save failed", description: String(saveFetcher.data.error) });
+      pushToast({ title: "Save failed", description: String(saveFetcher.data.error), variant: "error" });
     } else if (saveFetcher.data && "saved" in saveFetcher.data) {
       pushToast({
         title: saveFetcher.data.published ? "Workflow published" : "Workflow saved",
         description: saveFetcher.data.published
           ? "Workflow published successfully."
-          : "Draft updated successfully."
+          : "Draft updated successfully.",
+        variant: "success"
       });
       setIsEditing(false);
     }
   }, [pushToast, saveFetcher.data]);
 
   return (
-    <div className="px-8 py-10 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-white/50">Workflow</p>
+    <div className="mx-auto max-w-7xl px-6 py-10 space-y-8">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-8">
+        <div className="flex-1">
+          <p className="text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-2">Workflow</p>
           {isEditing ? (
-            <div className="flex flex-col gap-2 max-w-xl">
+            <div className="flex flex-col gap-3 max-w-xl">
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={description ?? ""}
                 placeholder="Describe the automation"
                 onChange={(e) => setDescription(e.target.value)}
@@ -262,24 +265,22 @@ export default function WorkflowDetailRoute() {
             </div>
           ) : (
             <>
-              <h2 className="text-3xl font-semibold text-white">{workflow.name}</h2>
-              <p className="text-sm text-white/60 mt-2 max-w-3xl">{workflow.description}</p>
+              <h2 className="text-3xl font-bold text-white tracking-tight">{workflow.name}</h2>
+              <p className="text-sm text-slate-400 mt-2 max-w-3xl leading-relaxed">{workflow.description}</p>
             </>
           )}
         </div>
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            className="btn-secondary"
+          <Button
+            variant="secondary"
             onClick={() => setIsEditing((prev) => !prev)}
           >
             {isEditing ? "Cancel Edit" : "Edit Workflow"}
-          </button>
+          </Button>
           {isEditing ? (
             <>
-              <button
-                type="button"
-                className="btn-secondary"
+              <Button
+                variant="secondary"
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -296,10 +297,8 @@ export default function WorkflowDetailRoute() {
                 }
               >
                 Save Draft
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
+              </Button>
+              <Button
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -316,13 +315,12 @@ export default function WorkflowDetailRoute() {
                 }
               >
                 Publish
-              </button>
+              </Button>
             </>
           ) : (
-            <button
-              type="button"
-              className={`btn-primary ${fetcher.state !== "idle" ? "opacity-60 cursor-not-allowed" : ""}`}
+            <Button
               disabled={fetcher.state !== "idle"}
+              isLoading={fetcher.state !== "idle"}
               onClick={() =>
                 fetcher.submit(
                   {
@@ -333,15 +331,16 @@ export default function WorkflowDetailRoute() {
                   { method: "post" }
                 )
               }
+              rightIcon={<span>▶</span>}
             >
               Run Workflow
-            </button>
+            </Button>
           )}
         </div>
       </header>
 
       {showPublishedBanner ? (
-        <div className="card border border-emerald-400/40 text-emerald-200 text-sm flex items-start justify-between gap-3">
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center justify-between gap-3">
           <span>Workflow published successfully.</span>
           <button
             type="button"
@@ -353,171 +352,199 @@ export default function WorkflowDetailRoute() {
         </div>
       ) : null}
       {errorMessage ? (
-        <div className="card border border-rose-400/40 text-rose-200 text-sm">{errorMessage}</div>
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm">{errorMessage}</div>
       ) : null}
       {statusMessage ? (
-        <div className="card border border-emerald-400/40 text-emerald-200 text-sm">{statusMessage}</div>
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">{statusMessage}</div>
       ) : null}
 
-      <ClientOnly fallback={<div className="h-[640px] bg-white/5 rounded-3xl animate-pulse" />}>
-        {() => (
-          <FlowBuilder
-            key={workflow.id}
-            initialNodes={definition.nodes}
-            initialEdges={definition.edges}
-            onChange={(payload) => setDefinition(payload)}
-            showPalette={isEditing}
-            interactive={isEditing}
-            nodeStatuses={
-              Object.keys(liveStatuses).length > 0
-                ? liveStatuses
-                : executionDetail?.tasks
-                  ? Object.fromEntries(
+      <div className="h-[640px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm">
+        <ClientOnly fallback={<div className="h-full w-full bg-white/5 animate-pulse" />}>
+          {() => (
+            <FlowBuilder
+              key={workflow.id}
+              initialNodes={definition.nodes}
+              initialEdges={definition.edges}
+              onChange={(payload) => setDefinition(payload)}
+              showPalette={isEditing}
+              interactive={isEditing}
+              nodeStatuses={
+                Object.keys(liveStatuses).length > 0
+                  ? liveStatuses
+                  : executionDetail?.tasks
+                    ? Object.fromEntries(
                       executionDetail.tasks.map((task) => [task.nodeId, task.status as TaskStatus])
                     )
-                  : undefined
-            }
-          />
-        )}
-      </ClientOnly>
+                    : undefined
+              }
+            />
+          )}
+        </ClientOnly>
+      </div>
 
-      <section className="space-y-4">
-        <p className="text-sm uppercase tracking-[0.4em] text-white/50">Recent Executions</p>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {executionList.map((execution) => {
-            const active = execution.id === selectedExecutionId;
-            return (
-              <button
-                key={execution.id}
-                onClick={() => setSelectedExecutionId(execution.id)}
-                className={`card text-left transition ${
-                  active ? "border-blue-400/60 shadow-glow" : "hover:border-white/20"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-white font-semibold">{execution.status}</p>
-                  <p className="text-xs text-white/60">{execution.duration ?? "--"} ms</p>
+      <section className="space-y-6">
+        <p className="text-sm uppercase tracking-[0.4em] text-slate-400 font-medium">Recent Executions</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-4 lg:col-span-1 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+            {executionList.map((execution) => {
+              const active = execution.id === selectedExecutionId;
+              return (
+                <Card
+                  key={execution.id}
+                  hover
+                  onClick={() => setSelectedExecutionId(execution.id)}
+                  className={`cursor-pointer border-2 ${active ? "border-blue-500/50 bg-blue-500/5 shadow-glow-sm" : "border-transparent"
+                    }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <StatusBadge status={execution.status} />
+                    <span className="text-[10px] text-slate-500 font-mono">{execution.duration ?? "--"} ms</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-mono">{execution.id.slice(0, 8)}</span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(execution.startedAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          <Card className="lg:col-span-2 flex flex-col h-[600px]">
+            {executionDetail ? (
+              <>
+                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-1">Execution Detail</p>
+                    <p className="text-lg text-white font-semibold font-mono">{executionDetail.id}</p>
+                  </div>
+                  <StatusBadge status={executionDetail.status} />
                 </div>
-                <p className="text-xs text-white/50 mt-2">
-                  Started {new Date(execution.startedAt).toLocaleString()}
-                </p>
-              </button>
-            );
-          })}
-        </div>
 
-        {executionDetail ? (
-          <div className="card space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-white/50">Execution Detail</p>
-                <p className="text-lg text-white font-semibold">{executionDetail.id}</p>
-              </div>
-              <span className="pill">{executionDetail.status}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-white/70">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Started</p>
-                <p>{executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Completed</p>
-                <p>
-                  {executionDetail.completedAt
-                    ? new Date(executionDetail.completedAt).toLocaleString()
-                    : "--"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Duration</p>
-                <p>{executionDetail.duration ? `${executionDetail.duration} ms` : "--"}</p>
-              </div>
-            </div>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                    <p className="text-xs text-slate-500 mb-1">Started</p>
+                    <p className="text-sm text-white font-mono">
+                      {executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleTimeString() : "--"}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                    <p className="text-xs text-slate-500 mb-1">Completed</p>
+                    <p className="text-sm text-white font-mono">
+                      {executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleTimeString() : "--"}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/5 border border-white/5">
+                    <p className="text-xs text-slate-500 mb-1">Duration</p>
+                    <p className="text-sm text-white font-mono">
+                      {executionDetail.duration ? `${executionDetail.duration} ms` : "--"}
+                    </p>
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/50">Tasks</p>
-              <div className="space-y-2">
-                {(executionDetail.tasks ?? []).map((task) => (
-                  <div
-                    key={task.id}
-                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="text-sm text-white font-semibold">{task.label ?? task.nodeId}</p>
-                      <p className="text-xs text-white/60">
-                        {task.status} • {task.duration ? `${task.duration} ms` : "--"}
-                      </p>
-                    </div>
-                    <div className="text-xs text-white/50 text-right">
-                      {task.startedAt ? new Date(task.startedAt).toLocaleTimeString() : "--"}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
+                  <div className="flex flex-col min-h-0">
+                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-3">Tasks</p>
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {(executionDetail.tasks ?? []).map((task) => (
+                        <div
+                          key={task.id}
+                          className="rounded-lg border border-white/5 bg-white/5 px-3 py-2.5 flex items-center justify-between hover:bg-white/10 transition-colors"
+                        >
+                          <div>
+                            <p className="text-sm text-white font-medium">{task.label ?? task.nodeId}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <StatusDot status={task.status} />
+                              <span className="text-xs text-slate-400">{task.status}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400 font-mono">{task.duration ? `${task.duration}ms` : "--"}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {(executionDetail.tasks ?? []).length === 0 && (
+                        <p className="text-xs text-slate-500 text-center py-4">No tasks recorded.</p>
+                      )}
                     </div>
                   </div>
-                ))}
-                {(executionDetail.tasks ?? []).length === 0 ? (
-                  <p className="text-xs text-white/60">No task data available.</p>
-                ) : null}
-              </div>
-            </div>
 
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.35em] text-white/50">Logs</p>
-                <div className="space-y-2 max-h-64 overflow-auto">
-                  {(executionDetail.logs ?? []).map((log) => (
-                    <div
-                      key={log.id}
-                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 relative group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={`px-2 py-0.5 rounded-full border text-[10px] ${
-                            log.level === "ERROR" || log.level === "FATAL"
-                              ? "border-rose-400/50 text-rose-200"
-                              : log.level === "WARN"
-                                ? "border-amber-300/60 text-amber-200"
-                                : "border-white/20 text-white/80"
-                          }`}
+                  <div className="flex flex-col min-h-0">
+                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-3">Logs</p>
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {(executionDetail.logs ?? []).map((log) => (
+                        <div
+                          key={log.id}
+                          className="rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-xs font-mono relative group"
                         >
-                          {log.level}
-                        </span>
-                        <span className="text-white/50">
-                          {new Date(log.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="mt-1">{log.message}</p>
-                      {"metadata" in log && log.metadata ? (
-                        <div className="mt-1 text-[11px] text-white/60">
-                          {log.metadata.error ? <p>Error: {String(log.metadata.error)}</p> : null}
-                          {log.metadata.stack ? (
-                            <p className="text-white/50">Stack: {String(log.metadata.stack)}</p>
-                          ) : null}
+                          <div className="flex items-center justify-between mb-1">
+                            <LogLevel level={log.level} />
+                            <span className="text-slate-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                          <p className="text-slate-300 break-words">{log.message}</p>
                         </div>
-                      ) : null}
-                      {["ERROR", "FATAL"].includes(log.level) && log.metadata ? (
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-2 translate-y-full bg-slate-950/95 border border-rose-400/40 text-rose-100 rounded-lg px-3 py-2 text-[11px] max-w-xs shadow-glow opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                          <p className="font-semibold mb-1">Error details</p>
-                          {log.metadata.error ? (
-                            <p className="whitespace-pre-wrap">Message: {String(log.metadata.error)}</p>
-                          ) : null}
-                          {log.metadata.stack ? (
-                            <p className="whitespace-pre-wrap mt-1 text-white/70">
-                              Stack: {String(log.metadata.stack)}
-                            </p>
-                          ) : null}
-                          {!log.metadata.error && !log.metadata.stack ? (
-                            <p className="text-white/60">No additional metadata.</p>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      ))}
+                      {(executionDetail.logs ?? []).length === 0 && (
+                        <p className="text-xs text-slate-500 text-center py-4">No logs recorded.</p>
+                      )}
                     </div>
-                  ))}
-                  {(executionDetail.logs ?? []).length === 0 ? (
-                    <p className="text-xs text-white/60">No logs recorded.</p>
-                  ) : null}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
+                Select an execution to view details
               </div>
-            </div>
-          </div>
-        ) : null}
+            )}
+          </Card>
+        </div>
       </section>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors = {
+    RUNNING: "bg-blue-500/10 text-blue-400 border-blue-500/20 animate-pulse",
+    COMPLETED: "bg-green-500/10 text-green-400 border-green-500/20",
+    FAILED: "bg-red-500/10 text-red-400 border-red-500/20",
+    PENDING: "bg-slate-500/10 text-slate-400 border-slate-500/20"
+  };
+
+  const style = colors[status as keyof typeof colors] || colors.PENDING;
+
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${style}`}>
+      {status}
+    </span>
+  );
+}
+
+function StatusDot({ status }: { status: string }) {
+  const colors = {
+    RUNNING: "bg-blue-400 animate-pulse",
+    COMPLETED: "bg-green-400",
+    FAILED: "bg-red-400",
+    PENDING: "bg-slate-600"
+  };
+  return (
+    <div className={`w-1.5 h-1.5 rounded-full ${colors[status as keyof typeof colors] || colors.PENDING}`} />
+  );
+}
+
+function LogLevel({ level }: { level: string }) {
+  const colors = {
+    INFO: "text-blue-400",
+    WARN: "text-amber-400",
+    ERROR: "text-red-400",
+    FATAL: "text-red-500 font-bold",
+    DEBUG: "text-slate-500"
+  };
+
+  return (
+    <span className={`font-bold ${colors[level as keyof typeof colors] || "text-slate-500"}`}>
+      {level}
+    </span>
   );
 }
