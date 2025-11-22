@@ -1,3 +1,30 @@
+/**
+ * FlowBuilder Component
+ *
+ * The main visual workflow builder powered by React Flow.
+ * This component provides a drag-and-drop interface for creating and editing workflows.
+ *
+ * Key Features:
+ * - Drag nodes from palette to canvas
+ * - Connect nodes to create workflow paths
+ * - Configure nodes via side panel
+ * - Real-time validation with error highlighting
+ * - Auto-layout for clean diagrams
+ * - Undo/redo support (30-step history)
+ * - Parallel execution mode auto-detection (siblings with same parent)
+ * - Debounced validation (500ms delay for performance)
+ *
+ * Validation:
+ * - Only shows after user interaction (not on initial load)
+ * - Validates on node save, edge creation, deletion
+ * - Shows banner at top-center with error message
+ * - Highlights invalid nodes with red border
+ * - Auto-dismisses after 3 seconds
+ *
+ * @component
+ * @module FlowBuilder
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import ReactFlow, {
   Background,
@@ -29,8 +56,12 @@ import { validateNodeConfig } from "~/utils/node-validation";
 import { buildWorkflowGraph, buildExecutionLayers } from "~/utils/workflow-graph";
 import type { EdgeMouseHandler } from "reactflow";
 
+// Register custom node component (glassmorphic design)
 const nodeTypes = { glass: GlassNode };
 
+/**
+ * Props for the FlowBuilder component.
+ */
 export interface FlowBuilderProps {
   initialNodes: Node[];
   initialEdges: Edge[];

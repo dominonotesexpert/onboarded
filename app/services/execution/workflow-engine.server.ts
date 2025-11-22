@@ -1,3 +1,17 @@
+/**
+ * Workflow Execution Engine
+ *
+ * This module implements the core workflow execution engine using Effect.ts.
+ * It handles DAG-based workflow traversal with support for:
+ * - Parallel and sequential node execution
+ * - Retry logic with configurable attempts
+ * - Timeout protection per node
+ * - Real-time event streaming via SSE
+ * - Comprehensive execution logging
+ *
+ * @module workflow-engine
+ */
+
 import { Effect } from "effect";
 import { Prisma } from "@prisma/client";
 import { prisma } from "~/lib/prisma.server";
@@ -9,29 +23,48 @@ import { validateWorkflowDefinition } from "~/utils/workflow-validation";
 import type { ExecutionContext, TaskResult } from "./node-handlers.server";
 import { resolveTaskHandler } from "./node-handlers.server";
 
+/**
+ * Types of events emitted during workflow execution.
+ * Used for real-time monitoring via Server-Sent Events (SSE).
+ */
 export type ExecutionEventType =
-  | "EXECUTION_STARTED"
-  | "TASK_STARTED"
-  | "TASK_COMPLETED"
-  | "TASK_FAILED"
-  | "EXECUTION_COMPLETED";
+  | "EXECUTION_STARTED"   // Workflow execution begins
+  | "TASK_STARTED"        // Individual task/node starts
+  | "TASK_COMPLETED"      // Task finishes successfully
+  | "TASK_FAILED"         // Task fails after all retries
+  | "EXECUTION_COMPLETED"; // Entire workflow finishes
 
+/**
+ * Event structure for execution lifecycle notifications.
+ * Streamed to clients via SSE for real-time monitoring.
+ */
 export interface ExecutionEvent {
   type: ExecutionEventType;
-  payload: Record<string, unknown>;
-  timestamp: string;
+  payload: Record<string, unknown>;  // Event-specific data (nodeId, status, error, etc.)
+  timestamp: string;                 // ISO 8601 timestamp
 }
 
+/**
+ * Callback function for emitting execution events.
+ * Used by the execution-hub for broadcasting to SSE subscribers.
+ */
 export type EmitExecutionEvent = (event: ExecutionEvent) => void;
 
+/**
+ * Complete result of a workflow execution.
+ * Contains all events, shared context, and individual task results.
+ */
 export interface WorkflowExecutionResult {
-  events: ExecutionEvent[];
-  sharedContext: Record<string, unknown>;
-  results: Record<string, TaskResult>;
-  durationMs?: number;
+  events: ExecutionEvent[];                    // Chronological list of all events
+  sharedContext: Record<string, unknown>;      // Final shared context with all task outputs
+  results: Record<string, TaskResult>;         // Map of nodeId -> task result
+  durationMs?: number;                         // Total execution time in milliseconds
 }
 
+// Default no-op event emitter (used when not streaming events)
 const defaultEmit: EmitExecutionEvent = () => undefined;
+
+// Maximum size for logged context objects (prevents database bloat)
 const LOG_CONTEXT_LIMIT = 800;
 
 export interface ValidationIssue {
@@ -39,6 +72,35 @@ export interface ValidationIssue {
   nodeId?: string;
 }
 
+/**
+ * Execute a workflow definition with the given input payload.
+ *
+ * This is the main entry point for workflow execution. It:
+ * 1. Validates the workflow structure (DAG, required fields)
+ * 2. Builds an execution graph with topological ordering
+ * 3. Executes nodes in batches (parallel siblings, sequential otherwise)
+ * 4. Handles retries, timeouts, and error propagation
+ * 5. Persists execution logs and task status to database
+ * 6. Streams real-time events via the emit callback
+ *
+ * @param definition - The workflow definition with nodes and edges
+ * @param payload - Input data passed to the workflow (accessible via context)
+ * @param emit - Optional callback for streaming execution events (SSE)
+ * @param executionId - Optional execution record ID for database persistence
+ * @param workflowId - Optional workflow record ID for linking nodes
+ * @returns Complete execution result with events, context, and task results
+ * @throws Error if workflow validation fails or a critical task fails
+ *
+ * @example
+ * ```typescript
+ * const result = await runWorkflow(
+ *   { nodes: [...], edges: [...] },
+ *   { userId: "123", email: "user@example.com" },
+ *   (event) => console.log('Event:', event.type)
+ * );
+ * console.log('Workflow completed in', result.durationMs, 'ms');
+ * ```
+ */
 export async function runWorkflow(
   definition: WorkflowDefinition,
   payload: Record<string, unknown>,
@@ -46,8 +108,13 @@ export async function runWorkflow(
   executionId?: string,
   workflowId?: string
 ): Promise<WorkflowExecutionResult> {
+  // Validate workflow structure (cycles, required fields, etc.)
   validateWorkflowDefinition(definition);
+
+  // Build DAG representation with topological ordering
   const graph = buildWorkflowGraph(definition);
+
+  // Maximum parallel tasks running at once (prevents resource exhaustion)
   const maxConcurrency = 4;
   const startedAt = Date.now();
   const sharedContext: Record<string, unknown> = structuredClone(payload ?? {});
@@ -85,6 +152,11 @@ export async function runWorkflow(
     });
   }
 
+  // Topological sorting tracking:
+  // - indegree: Number of incoming edges per node (dependencies)
+  // - activatedCounts: How many parents activated this node (for conditional branches)
+  // - processedCounts: How many parents have finished processing
+  // - nodeIdMap: Maps workflow nodeId to database WorkflowNode primary key
   const indegree = new Map<string, number>();
   const activatedCounts = new Map<string, number>();
   const processedCounts = new Map<string, number>();
@@ -125,13 +197,19 @@ export async function runWorkflow(
     processedCounts.set(node.id, 0);
   }
 
+  // Start with entry nodes (nodes with no incoming edges)
   let currentBatch = graph.entryNodes.map((node) => node.id);
   const visited = new Set<string>();
 
+  // Execute workflow in batches using topological ordering
+  // Each batch contains nodes that have all dependencies satisfied
   while (currentBatch.length > 0) {
     const batch = currentBatch;
     currentBatch = [];
 
+    // Separate batch into sequential and parallel nodes
+    // Sequential: executionMode='sequential' (default) - run one-by-one
+    // Parallel: executionMode='parallel' (siblings with same parent) - run concurrently
     const sequentialNodes = batch.filter(
       (id) => (graph.nodes.get(id)?.executionMode ?? "sequential") === "sequential"
     );
@@ -149,6 +227,25 @@ export async function runWorkflow(
       nodePrimaryIds: nodeIdMap
     };
 
+    /**
+     * Execute multiple nodes in parallel with concurrency limit.
+     *
+     * This implements a bounded parallelism pattern:
+     * - Launches up to `maxConcurrency` tasks simultaneously
+     * - As tasks complete, launches next tasks from queue
+     * - Uses Promise.race() to wait for ANY task to finish (not all)
+     * - Returns when all tasks complete
+     *
+     * This prevents resource exhaustion while maximizing throughput.
+     * For example, with maxConcurrency=4 and 10 nodes:
+     * - Starts nodes 0-3 immediately
+     * - When node 0 finishes, starts node 4
+     * - When node 1 finishes, starts node 5
+     * - And so on...
+     *
+     * @param ids - Array of node IDs to execute in parallel
+     * @returns Promise that resolves when all nodes complete
+     */
     const runLimitedParallel = async (ids: string[]) => {
       const running = new Set<Promise<Awaited<ReturnType<typeof runNode>>>>();
       const results: Promise<Awaited<ReturnType<typeof runNode>>>[] = [];
@@ -160,16 +257,21 @@ export async function runWorkflow(
         results.push(task);
       };
 
+      // Process queue with concurrency limit
       while (queue.length > 0 || running.size > 0) {
+        // Fill up to maxConcurrency slots
         while (queue.length > 0 && running.size < maxConcurrency) {
           const nextId = queue.shift();
           if (nextId) launch(nextId);
         }
+
+        // Wait for ANY running task to complete (then loop continues)
         if (running.size > 0) {
           await Promise.race(Array.from(running));
         }
       }
 
+      // Wait for all tasks to complete and return results
       return Promise.all(results);
     };
 
@@ -227,6 +329,23 @@ export async function runWorkflow(
   };
 }
 
+/**
+ * Execute a single workflow node with retry/timeout policies.
+ *
+ * This function:
+ * 1. Checks if node was already visited (prevents duplicate execution)
+ * 2. Emits TASK_STARTED event for monitoring
+ * 3. Creates TaskExecution database record
+ * 4. Resolves and executes the node handler (EMAIL, HTTP, SLACK, etc.)
+ * 5. Applies retry logic and timeout protection
+ * 6. Stores task output in shared context (accessible to downstream nodes)
+ * 7. Emits TASK_COMPLETED or TASK_FAILED event
+ * 8. Returns activation status for outgoing edges (conditional branching)
+ *
+ * @param nodeId - ID of the node to execute
+ * @param params - Execution parameters (graph, context, event emitter, etc.)
+ * @returns Object with nodeId and array of outgoing edge activations
+ */
 async function runNode(
   nodeId: string,
   params: {
@@ -437,6 +556,24 @@ function shouldActivateEdge(
   }
 }
 
+/**
+ * Execute a task with retry and timeout policies.
+ *
+ * This wrapper function applies resilience patterns:
+ * - **Timeout**: Fails if task exceeds timeoutMs (prevents hanging)
+ * - **Retry**: Retries failed tasks up to `retries` times with exponential backoff
+ * - **Backoff**: Waits 150ms * attempt_number between retries (150ms, 300ms, 450ms...)
+ *
+ * Example scenarios:
+ * - EMAIL node with retries=0: Sends once, fails immediately if error (no duplicates)
+ * - HTTP node with retries=3: Tries up to 4 times total (1 initial + 3 retries)
+ * - Task timeout=5000ms: Fails after 5 seconds regardless of retries
+ *
+ * @param effect - Effect.ts effect to execute (task handler)
+ * @param options - Retry count and timeout duration
+ * @returns Task result if successful
+ * @throws Error if all retries exhausted or timeout exceeded
+ */
 async function executeWithPolicies(
   effect: Effect.Effect<TaskResult>,
   options: { retries: number; timeoutMs: number }
