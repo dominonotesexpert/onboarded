@@ -219,9 +219,12 @@ export default function DashboardRoute() {
                       {["ERROR", "FATAL"].includes(log.level) && log.metadata && (
                         <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                           <p className="text-xs font-semibold text-red-400 mb-1">Error Details</p>
-                          {log.metadata.error && (
+                          {("error" in (log.metadata as Record<string, unknown>) || "stack" in (log.metadata as Record<string, unknown>)) && (
                             <pre className="text-[10px] text-red-300 whitespace-pre-wrap overflow-x-auto">
-                              {String(log.metadata.error)}
+                              {log.metadata && "error" in log.metadata ? String((log.metadata as Record<string, unknown>).error) : ""}
+                              {log.metadata && "stack" in log.metadata
+                                ? `\n${String((log.metadata as Record<string, unknown>).stack)}`
+                                : ""}
                             </pre>
                           )}
                         </div>
