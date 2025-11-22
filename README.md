@@ -41,6 +41,14 @@ FlowForge is a Remix + React Flow visual builder backed by a Prisma data model a
 - **Conditional logic**: Branch workflows based on expression evaluation (using secure expr-eval parser)
 - **Data transformation**: Map and transform data between workflow steps
 
+#### 🔌 REST API (JSON)
+- **Programmatic access**: Full JSON API for headless workflow management
+- **Workflow CRUD**: Create, read, update, and delete workflows via REST endpoints
+- **Execution trigger**: Start workflow executions programmatically with custom input data
+- **Status monitoring**: Query execution status, task details, and logs via API
+- **Real-time streaming**: Server-Sent Events (SSE) endpoint for live execution updates
+- **Integration ready**: Easy integration with external systems, CI/CD pipelines, and automation tools
+
 ### Stack
 - UI: Remix (SSR), React 18, React Flow, Tailwind, Framer Motion.
 - Backend: Effect-based executor, Prisma ORM with PostgreSQL.
@@ -80,12 +88,44 @@ Email nodes use SMTP; if unset they will fail. Demo mode skips persistence.
 - `app/services/execution/node-handlers.server.ts` – task handlers (Email/Slack/HTTP/Delay/etc.)
 - `prisma/schema.prisma` – DB models for Workflow, Node, Edge, Execution, TaskExecution, ExecutionLog
 
-### API (JSON)
-- `GET /api/workflows` – list workflows
-- `POST /api/workflows` – create workflow `{ name, description?, definition, isDraft?, isPublished? }`
-- `POST /api/workflows/:workflowId/execute` – trigger execution `{ input: {...} }`
-- `GET /api/executions/:executionId` – execution detail (status, tasks, logs)
-- `GET /api/executions/:executionId/stream` – SSE stream of execution events
+### REST API Reference
+
+#### Workflows
+- **`GET /api/workflows`**
+  List all workflows with metadata
+  **Response**: `{ workflows: [{ id, name, description, isPublished, createdAt, ... }] }`
+
+- **`POST /api/workflows`**
+  Create a new workflow
+  **Request**: `{ name, description?, definition, isDraft?, isPublished? }`
+  **Response**: `{ workflow: { id, name, ... } }`
+  **Status**: `201 Created` on success, `400 Bad Request` on validation error
+
+#### Execution
+- **`POST /api/workflows/:workflowId/execute`**
+  Trigger a workflow execution with input data
+  **Request**: `{ input: { key: "value", ... } }`
+  **Response**: `{ id, workflowId, status: "PENDING", startedAt, ... }`
+  **Status**: `202 Accepted` (execution runs asynchronously)
+
+- **`GET /api/executions/:executionId`**
+  Get execution details, task status, and logs
+  **Response**: `{ execution: { id, status, tasks: [...], logs: [...], duration, ... } }`
+  **Status**: `200 OK` or `404 Not Found`
+
+#### Real-time Streaming
+- **`GET /api/executions/:executionId/stream`**
+  Server-Sent Events stream for live execution updates
+  **Content-Type**: `text/event-stream`
+  **Events**: `EXECUTION_STARTED`, `TASK_STARTED`, `TASK_COMPLETED`, `TASK_FAILED`, `EXECUTION_COMPLETED`
+  **Example**:
+  ```javascript
+  const eventSource = new EventSource('/api/executions/abc123/stream');
+  eventSource.addEventListener('TASK_COMPLETED', (event) => {
+    const data = JSON.parse(event.data);
+    console.log('Task completed:', data.payload.nodeId);
+  });
+  ```
 
 ### Usage Notes
 
