@@ -133,7 +133,7 @@ export default function DashboardRoute() {
                   layout
                   key={execution.id}
                   onClick={() => setActiveExecutionId(execution.id)}
-                  className={`text-left p-4 rounded-xl border transition-all duration-300 group relative overflow-hidden ${activeExecutionId === execution.id
+                  className={`text-left p-4 rounded-xl border transition-all duration-300 group relative overflow-hidden min-h-[120px] ${activeExecutionId === execution.id
                       ? "bg-white/10 border-neon-blue/50 shadow-glow-sm"
                       : "bg-glass-light border-glass-border hover:bg-glass-medium"
                     }`}
@@ -171,7 +171,7 @@ export default function DashboardRoute() {
           {/* Main Detail Area */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             {/* Status Card */}
-            <div className="glass p-6 rounded-2xl min-h-[200px] flex flex-col">
+            <div className="glass p-6 rounded-2xl min-h-[260px] flex flex-col">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-white/50 mb-1">Selected Execution</p>
@@ -234,28 +234,33 @@ export default function DashboardRoute() {
               <div className="flex-1 p-4 overflow-auto font-mono text-xs space-y-1 custom-scrollbar">
                 {executionDetail ? (
                   <>
-                    {(executionDetail.logs ?? []).map((log) => (
-                      <div key={log.id} className="group flex gap-3 hover:bg-white/5 p-1 rounded -mx-1 transition-colors">
-                        <span className="text-white/30 shrink-0 w-20">
-                          {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}
-                        </span>
-                        <span className={`shrink-0 w-16 font-bold ${log.level === 'ERROR' || log.level === 'FATAL' ? 'text-red-400' :
-                          log.level === 'WARN' ? 'text-yellow-400' :
-                            'text-neon-blue'
-                          }`}>
-                          {log.level}
-                        </span>
-                        <div className="text-white/80 break-all">
-                          {log.message}
-                          {["ERROR", "FATAL"].includes(log.level) && log.metadata && (
-                            <div className="mt-1 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-300">
-                              {log.metadata.error && <div>{String(log.metadata.error)}</div>}
-                              {log.metadata.stack && <div className="opacity-50 mt-1 whitespace-pre-wrap">{String(log.metadata.stack)}</div>}
-                            </div>
-                          )}
+                    {(executionDetail.logs ?? []).map((log) => {
+                      const meta = (log.metadata ?? {}) as Record<string, unknown>;
+                      const metaError = "error" in meta && meta.error !== undefined ? String(meta.error) : undefined;
+                      const metaStack = "stack" in meta && meta.stack !== undefined ? String(meta.stack) : undefined;
+                      return (
+                        <div key={log.id} className="group flex gap-3 hover:bg-white/5 p-1 rounded -mx-1 transition-colors">
+                          <span className="text-white/30 shrink-0 w-20">
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}
+                          </span>
+                          <span className={`shrink-0 w-16 font-bold ${log.level === 'ERROR' || log.level === 'FATAL' ? 'text-red-400' :
+                            log.level === 'WARN' ? 'text-yellow-400' :
+                              'text-neon-blue'
+                            }`}>
+                            {log.level}
+                          </span>
+                          <div className="text-white/80 break-all">
+                            {log.message}
+                            {["ERROR", "FATAL"].includes(log.level) && (metaError || metaStack) && (
+                              <div className="mt-1 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-300">
+                                {metaError && <div>{String(metaError)}</div>}
+                                {metaStack && <div className="opacity-50 mt-1 whitespace-pre-wrap">{String(metaStack)}</div>}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {(executionDetail.logs ?? []).length === 0 && (
                       <div className="text-white/30 italic">No logs available for this execution.</div>
                     )}

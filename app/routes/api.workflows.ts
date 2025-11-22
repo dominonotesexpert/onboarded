@@ -2,8 +2,19 @@ import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { createWorkflow, listWorkflows } from "~/services/workflows/workflow.server";
 
 export async function loader() {
-  const workflows = await listWorkflows();
-  return json({ workflows });
+  try {
+    const workflows = await listWorkflows();
+    return json({ workflows });
+  } catch (error) {
+    console.error("Failed to list workflows:", error);
+    return json(
+      {
+        error: error instanceof Error ? error.message : "Failed to list workflows",
+        workflows: []
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -11,8 +22,29 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Unsupported method" }, { status: 405 });
   }
 
-  const payload = await request.json();
-  const workflow = await createWorkflow(payload);
+  try {
+    const payload = await request.json();
+    const workflow = await createWorkflow(payload);
+    return json({ workflow }, { status: 201 });
+  } catch (error) {
+    // Handle malformed JSON
+    if (error instanceof SyntaxError) {
+      return json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
 
-  return json({ workflow }, { status: 201 });
+    // Handle Remix response throws
+    if (error instanceof Response) {
+      return error;
+    }
+
+    // Handle all other errors
+    console.error("Failed to create workflow:", error);
+    return json(
+      {
+        error: error instanceof Error ? error.message : "Failed to create workflow",
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined
+      },
+      { status: 500 }
+    );
+  }
 }

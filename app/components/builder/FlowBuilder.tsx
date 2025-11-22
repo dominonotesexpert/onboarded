@@ -16,6 +16,7 @@ import ReactFlow, {
 } from "reactflow";
 import { AnimatePresence } from "framer-motion";
 import { nanoid } from "nanoid";
+import { useDebounce } from "use-debounce";
 import { NodePalette } from "./NodePalette";
 import { NodeConfigPanel } from "./NodeConfigPanel";
 import { GlassNode } from "./nodes/GlassNode";
@@ -24,6 +25,7 @@ import { useToast } from "~/components/common/Toaster";
 import type { TaskStatus, WorkflowDefinition } from "~/types/workflow";
 import { reactFlowToDefinition } from "~/utils/workflow-transform";
 import { getValidationIssues } from "~/utils/workflow-validation";
+import { validateNodeConfig } from "~/utils/node-validation";
 import { buildWorkflowGraph, buildExecutionLayers } from "~/utils/workflow-graph";
 import type { EdgeMouseHandler } from "reactflow";
 
@@ -141,6 +143,10 @@ function FlowBuilderCanvas({
     historyIndexRef.current = historyRef.current.length - 1;
   }, [nodes, edges, interactive]);
 
+  // Debounce validation to improve performance (runs 500ms after last change)
+  const [debouncedNodes] = useDebounce(nodes, 500);
+  const [debouncedEdges] = useDebounce(edges, 500);
+
   useEffect(() => {
     if (!interactive) return;
     if (!hasEdited) {
@@ -150,7 +156,7 @@ function FlowBuilderCanvas({
       return;
     }
     try {
-      const definition = reactFlowToDefinition(nodes, edges);
+      const definition = reactFlowToDefinition(debouncedNodes, debouncedEdges);
       const issues = getValidationIssues(definition as WorkflowDefinition);
       setInvalidNodeIds(new Set(issues.map((issue: { nodeId?: string }) => issue.nodeId).filter(Boolean) as string[]));
       const newMessage = issues[0]?.message ?? null;
@@ -165,7 +171,7 @@ function FlowBuilderCanvas({
         setShowValidationMessage(true);
       }
     }
-  }, [edges, hasEdited, nodes, interactive]);
+  }, [debouncedEdges, debouncedNodes, hasEdited, interactive]);
 
   useEffect(() => {
     if (!validationMessage || !showValidationMessage) return;
@@ -466,57 +472,17 @@ function FlowBuilderCanvas({
         ...payload
       };
 
-      // Validate the node type and config
+      // Validate using shared validation logic
       const nodeType = selectedNode.data?.type as string;
-      const config = updatedNodeData.config as Record<string, unknown>;
-      let validationError: string | null = null;
+      const config = updatedNodeData.config as Record<string, unknown> | undefined;
+      const validation = validateNodeConfig(
+        nodeType as WorkflowDefinition["nodes"][number]["type"],
+        config,
+        updatedNodeData.label ?? selectedNode.id
+      );
 
-      switch (nodeType) {
-        case "EMAIL":
-          if (!config?.to || !config?.subject) {
-            validationError = `Email node "${updatedNodeData.label ?? selectedNode.id}" requires "to" and "subject".`;
-          } else {
-            const to = String(config.to).trim();
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(to)) {
-              validationError = `Email node "${updatedNodeData.label ?? selectedNode.id}" must have a valid "to" email address.`;
-            }
-          }
-          break;
-        case "SLACK":
-          if (!config?.channel) {
-            validationError = `Slack node "${updatedNodeData.label ?? selectedNode.id}" requires a "channel".`;
-          }
-          break;
-        case "HTTP":
-          if (!config?.url) {
-            validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" requires a "url".`;
-          } else {
-            const rawUrl = String(config.url).trim();
-            try {
-              const parsed = new URL(rawUrl);
-              if (!/^https?:$/i.test(parsed.protocol)) {
-                validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" must use http or https URL.`;
-              }
-            } catch {
-              validationError = `HTTP node "${updatedNodeData.label ?? selectedNode.id}" has an invalid URL format.`;
-            }
-          }
-          break;
-        case "DELAY":
-          if (!config?.durationMs) {
-            validationError = `Delay node "${updatedNodeData.label ?? selectedNode.id}" requires "durationMs".`;
-          }
-          break;
-        case "CONDITIONAL":
-          if (!config?.expression) {
-            validationError = `Conditional node "${updatedNodeData.label ?? selectedNode.id}" requires an "expression".`;
-          }
-          break;
-      }
-
-      if (validationError) {
-        setValidationMessage(validationError);
+      if (!validation.valid) {
+        setValidationMessage(validation.error ?? "Validation failed");
         setShowValidationMessage(true);
         setInvalidNodeIds(new Set([selectedNode.id]));
         return false;

@@ -70,8 +70,14 @@ npx vitest run tests/workflow-engine.test.ts
 
 **Workflow Validation** (`app/utils/workflow-validation.ts`)
 - Cycle detection using DFS
-- Node-specific config validation (e.g., EMAIL requires "to", HTTP requires "url")
+- Delegates node config validation to shared utility
 - Returns structured `ValidationIssue[]` with node context
+
+**Node Validation** (`app/utils/node-validation.ts`)
+- Single source of truth for node configuration validation
+- Used by both workflow-validation.ts and FlowBuilder.tsx
+- Validates required fields and formats for each node type (EMAIL, SLACK, HTTP, etc.)
+- Returns `NodeValidationResult` with detailed error messages
 
 **Event Hub** (`app/services/events/execution-hub.server.ts`)
 - Node.js EventEmitter for SSE streaming
@@ -145,9 +151,10 @@ npx vitest run tests/workflow-engine.test.ts
 1. Add enum to `prisma/schema.prisma` `NodeType`
 2. Add type definition to `app/types/workflow.ts` `WorkflowNodeType`
 3. Create handler in `app/services/execution/node-handlers.server.ts`
-4. Add validation rules in `app/utils/workflow-validation.ts`
+4. Add validation rules in `app/utils/node-validation.ts` (single source of truth)
 5. Add to node catalog in `app/constants/node-catalog.ts`
 6. Add config UI in `app/components/builder/NodeConfigPanel.tsx`
+7. Add tests in `tests/node-validation.test.ts`
 
 ### Workflow Execution Flow
 

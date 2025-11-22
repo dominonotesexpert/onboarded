@@ -68,7 +68,7 @@ model WorkflowEdge {
 model Execution {
   id            String          @id @default(cuid())
   workflowId    String
-  workflow      Workflow        @relation(fields: [workflowId], references: [id])
+  workflow      Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   status        ExecutionStatus
   input         Json
   output        Json?

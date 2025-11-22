@@ -11,8 +11,29 @@ export async function action({ params, request }: ActionFunctionArgs) {
     return json({ error: "Missing workflow id" }, { status: 400 });
   }
 
-  const input = await request.json();
-  const execution = await triggerExecution(workflowId, input.input ?? {});
+  try {
+    const body = await request.json();
+    const execution = await triggerExecution(workflowId, body.input ?? {});
+    return json(execution, { status: 202 });
+  } catch (error) {
+    // Handle malformed JSON
+    if (error instanceof SyntaxError) {
+      return json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
 
-  return json(execution, { status: 202 });
+    // Handle Remix response throws (e.g., from loaders/actions)
+    if (error instanceof Response) {
+      return error;
+    }
+
+    // Handle all other errors
+    console.error("Workflow execution error:", error);
+    return json(
+      {
+        error: error instanceof Error ? error.message : "Failed to start workflow execution",
+        details: process.env.NODE_ENV === "development" ? String(error) : undefined
+      },
+      { status: 500 }
+    );
+  }
 }
