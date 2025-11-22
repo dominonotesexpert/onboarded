@@ -21,6 +21,7 @@ export const demoWorkflows: WorkflowWithRelations[] = [
           id: "email-welcome",
           type: "EMAIL",
           label: "Welcome Email",
+          executionMode: "parallel",
           position: { x: 320, y: 60 },
           config: {
             to: "{{employee.email}}",
@@ -32,6 +33,7 @@ export const demoWorkflows: WorkflowWithRelations[] = [
           id: "slack-announce",
           type: "SLACK",
           label: "Slack Announcement",
+          executionMode: "parallel",
           position: { x: 320, y: 220 },
           config: {
             channel: "#welcome",
