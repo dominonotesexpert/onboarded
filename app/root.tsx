@@ -137,3 +137,28 @@ function applyTranslations(
     }
   });
 }
+
+export function ErrorBoundary() {
+  return (
+    <html lang="en" className="bg-midnight text-slate-100">
+      <head>
+        <Meta />
+        <Links />
+        <title>Something went wrong!</title>
+      </head>
+      <body className="antialiased flex items-center justify-center min-h-screen">
+        <div className="p-8 bg-glass-heavy border border-white/10 rounded-2xl max-w-lg text-center shadow-glow">
+          <h1 className="text-3xl font-bold text-white mb-4">Oops!</h1>
+          <p className="text-white/70 mb-6">Something went wrong while rendering this page.</p>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="px-6 py-2 bg-neon-blue text-white rounded-full font-medium hover:bg-neon-blue/80 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+        <Scripts />
+      </body>
+    </html>
+  );
+}

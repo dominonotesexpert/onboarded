@@ -30,8 +30,16 @@ export default function WorkflowsRoute() {
           <p className="text-xs uppercase tracking-[0.4em] text-white/50">Workflows</p>
           <h2 className="text-3xl font-semibold text-white mt-2">Automation Library</h2>
         </div>
-        <Link to="/workflows/new" className="btn-primary">
-          New Workflow
+        <Link
+          to="/workflows/new"
+          className="btn-neon px-6 py-3 text-base flex items-center gap-3 group"
+        >
+          <div className="p-1 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <span className="font-semibold tracking-wide">New Workflow</span>
         </Link>
       </header>
 

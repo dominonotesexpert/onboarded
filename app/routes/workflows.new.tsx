@@ -87,11 +87,27 @@ export default function NewWorkflowRoute() {
             <h2 className="text-3xl font-semibold text-white">Create Workflow</h2> */}
           </div>
           <div className="flex gap-3">
-            <button className="btn-secondary" type="submit" name="action" value="draft">
-              Save Draft
+            <button
+              className="btn-secondary px-5 py-2.5 flex items-center gap-2 text-sm hover:bg-white/10"
+              type="submit"
+              name="action"
+              value="draft"
+            >
+              <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              <span>Save Draft</span>
             </button>
-            <button className="btn-primary" type="submit" name="action" value="publish">
-              Publish
+            <button
+              className="btn-neon px-6 py-2.5 flex items-center gap-2 text-sm shadow-lg shadow-neon-blue/20"
+              type="submit"
+              name="action"
+              value="publish"
+            >
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Publish</span>
             </button>
           </div>
         </header>
