@@ -33,7 +33,7 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-white/50">Node Config</p>
-          <h3 className="text-xl font-semibold text-white mt-1">{node.type}</h3>
+          <h3 className="text-xl font-semibold text-white mt-1">{(node.data as { type?: string })?.type ?? node.type}</h3>
         </div>
         <button onClick={onClose} className="text-white/60 hover:text-white text-sm">
           Close
