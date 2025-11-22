@@ -48,8 +48,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return json({ workflow }, { status: 201 });
   } catch (error) {
+    console.error("Workflow creation error:", error);
     const message = (error as Error)?.message ?? "Failed to save workflow";
-    return json({ error: message }, { status: 400 });
+    return json({
+      error: message,
+      details: process.env.NODE_ENV === "development" ? String(error) : undefined
+    }, { status: 400 });
   }
 }
 

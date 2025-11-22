@@ -23,8 +23,8 @@ export default function DashboardRoute() {
     [workflows]
   );
   const [activeExecutionId, setActiveExecutionId] = useState(executions[0]?.id);
-  const streamUrl = activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : undefined;
-  const event = useEventSource(streamUrl as string);
+  const streamUrl = activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : "data:text/event-stream,";
+  const event = useEventSource(streamUrl);
   const liveEvent = event ? JSON.parse(event) : null;
   const [executionDetail, setExecutionDetail] = useState<ExecutionDetail | null>(null);
   const lastLoadedExecution = useRef<string | null>(null);

@@ -68,6 +68,12 @@ export async function runWorkflow(
     payload: { nodes: definition.nodes.length }
   });
 
+  // Debug: trace execution lifecycle
+  if (executionId) {
+    // eslint-disable-next-line no-console
+    console.log(`[workflow] start executionId=${executionId} workflowId=${workflowId ?? "unknown"}`);
+  }
+
   if (persistLogs && executionId) {
     await prisma.executionLog.create({
       data: {
@@ -197,6 +203,11 @@ export async function runWorkflow(
     payload: { status: "COMPLETED" }
   });
 
+  if (executionId) {
+    // eslint-disable-next-line no-console
+    console.log(`[workflow] completed executionId=${executionId} durationMs=${Date.now() - startedAt}`);
+  }
+
   if (persistLogs && executionId) {
     await prisma.executionLog.create({
       data: {
@@ -240,6 +251,12 @@ async function runNode(
   }
   visited.add(node.id);
 
+  // Debug: trace node execution starts
+  if (params.executionId) {
+    // eslint-disable-next-line no-console
+    console.log(`[workflow] node start executionId=${params.executionId} nodeId=${node.id} type=${node.type}`);
+  }
+
   emitEvent({
     type: "TASK_STARTED",
     payload: { nodeId: node.id, label: node.label, type: node.type }
@@ -276,9 +293,13 @@ async function runNode(
   const handler = resolveTaskHandler(node.type);
   const context: ExecutionContext = { input: payload, shared: sharedContext };
 
+  // EMAIL defaults to 0 retries to avoid duplicate sends unless explicitly configured.
+  const retries = node.type === "EMAIL" ? Number(node.retries ?? 0) : Number(node.retries ?? 2);
+  // Give EMAIL more time by default; others keep 5s unless overridden on the node.
+  const timeoutMs = node.type === "EMAIL" ? Number(node.timeout ?? 20_000) : Number(node.timeout ?? 5_000);
   const result = await executeWithPolicies(handler(node, context), {
-    retries: Number(node.retries ?? 2),
-    timeoutMs: Number(node.timeout ?? 5_000)
+    retries,
+    timeoutMs
   }).catch(async (error) => {
     emitEvent({
       type: "TASK_FAILED",
@@ -338,6 +359,13 @@ async function runNode(
         duration: Date.now() - startedAt
       }
     });
+
+    if (node.type === "EMAIL" && result.data?.messageId) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[email-node] executionId=${params.executionId} nodeId=${node.id} taskId=${taskRecordId} messageId=${result.data.messageId} to=${(result.data as Record<string, unknown>)?.to ?? "unknown"}`
+      );
+    }
   }
 
   completedResults[node.id] = result;
@@ -350,6 +378,11 @@ async function runNode(
       output: result.data
     }
   });
+
+  if (params.executionId) {
+    // eslint-disable-next-line no-console
+    console.log(`[workflow] node completed executionId=${params.executionId} nodeId=${node.id} type=${node.type} status=${result.status}`);
+  }
 
   const outgoingEdges = params.graph.edges.filter((edge) => edge.source === node.id);
   const outgoingActivations = outgoingEdges.map((edge) => ({

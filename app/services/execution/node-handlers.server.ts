@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { Parser } from "expr-eval";
 import type { WorkflowNodeDefinition, WorkflowNodeType } from "~/types/workflow";
 import { renderTemplateString } from "~/utils/templates";
 import { sendMail } from "~/lib/mailer.server";
@@ -59,6 +60,11 @@ const handlers: Record<WorkflowNodeType, TaskHandler> = {
         })
       );
 
+      // Debug: log messageId server-side for troubleshooting duplicate sends.
+      // This does not surface to the client; safe to keep for debugging.
+      // eslint-disable-next-line no-console
+      console.log(`[email-node] messageId=${messageId} to=${to}`);
+
       return {
         status: "SUCCESS",
         data: {
@@ -102,6 +108,16 @@ const handlers: Record<WorkflowNodeType, TaskHandler> = {
       yield* delay(Math.min(duration, 2_000));
       return { status: "SUCCESS", data: { waitedMs: duration } };
     }),
+  /**
+   * CONDITIONAL node handler - evaluates expressions to determine workflow branching.
+   *
+   * SECURITY: Uses expr-eval parser instead of new Function() to prevent code injection.
+   * Only primitive values (number, string, boolean) are supported in expressions.
+   *
+   * Supports both syntaxes:
+   * - Direct field access: "score > 50"
+   * - Context syntax (legacy): "context.score > 50"
+   */
   CONDITIONAL: (node, context) =>
     Effect.sync(() => {
       const { expression, branchTrue = "yes", branchFalse = "no" } = node.config as {
@@ -110,14 +126,37 @@ const handlers: Record<WorkflowNodeType, TaskHandler> = {
         branchFalse?: string;
       };
 
-      const fn = new Function("context", `return (${expression ?? "true"});`);
-      const result = Boolean(fn(context.shared));
+      try {
+        const parser = new Parser();
+        const expr = parser.parse(expression ?? "true");
 
-      return {
-        status: "SUCCESS",
-        branch: result ? branchTrue : branchFalse,
-        data: { result }
-      };
+        // Filter context to only include primitive types for security
+        const primitiveContext: Record<string, number | string | boolean> = {};
+        for (const [key, value] of Object.entries(context.shared)) {
+          if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+            primitiveContext[key] = value;
+          }
+        }
+
+        // Support both "context.field" and "field" syntax by providing both
+        const variables = {
+          context: primitiveContext as unknown as number,
+          ...primitiveContext
+        };
+
+        const result = Boolean(expr.evaluate(variables as Record<string, number>));
+
+        return {
+          status: "SUCCESS",
+          branch: result ? branchTrue : branchFalse,
+          data: { result }
+        };
+      } catch (error) {
+        throw new Error(
+          `Invalid conditional expression: ${(error as Error).message}. ` +
+          `Expression must be a valid boolean expression.`
+        );
+      }
     }),
   TRANSFORM: (node, context) =>
     Effect.sync(() => {

@@ -2,12 +2,14 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listExecutions, triggerExecution } from "~/services/execution/execution-service.server";
-import { getWorkflow } from "~/services/workflows/workflow.server";
-import { definitionToReactFlow } from "~/utils/workflow-transform";
+import { getWorkflow, updateWorkflow } from "~/services/workflows/workflow.server";
+import { definitionToReactFlow, reactFlowToDefinition } from "~/utils/workflow-transform";
 import { FlowBuilder } from "~/components/builder/FlowBuilder";
 import { ClientOnly } from "~/components/common/ClientOnly";
 import type { ExecutionDetail, WorkflowDefinition, TaskStatus } from "~/types/workflow";
 import { useEventSource } from "remix-utils/sse/react";
+import { getValidationIssues } from "~/utils/workflow-validation";
+import { useToast } from "~/components/common/Toaster";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!params.workflowId) {
@@ -30,6 +32,43 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   const formData = await request.formData();
+  const intent = String(formData.get("intent") ?? "run");
+
+  // Update workflow intent
+  if (intent === "update" || intent === "publish") {
+    try {
+      const parsed = JSON.parse(String(formData.get("definition") ?? "{}"));
+      const definition = reactFlowToDefinition(parsed.nodes ?? [], parsed.edges ?? []);
+      if (intent === "publish") {
+        const issues = getValidationIssues(definition as WorkflowDefinition);
+        if (issues.length > 0) {
+          return json(
+            { error: issues[0]?.message ?? "Workflow validation failed", issues },
+            { status: 400 }
+          );
+        }
+      }
+
+      const workflow = await updateWorkflow(params.workflowId, {
+        name: String(formData.get("name") ?? ""),
+        description: String(formData.get("description") ?? ""),
+        definition,
+        isDraft: intent !== "publish",
+        isPublished: intent === "publish"
+      });
+
+      if (!workflow) {
+        return json({ error: "Workflow not found" }, { status: 404 });
+      }
+
+      return json({ workflow, saved: true, published: intent === "publish" });
+    } catch (error) {
+      const message = (error as Error)?.message ?? "Failed to save workflow";
+      return json({ error: message }, { status: 400 });
+    }
+  }
+
+  // Trigger execution intent
   const payload = JSON.parse(String(formData.get("input") ?? "{}"));
   try {
     const execution = await triggerExecution(params.workflowId, payload ?? {});
@@ -44,6 +83,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function WorkflowDetailRoute() {
   const { workflow, executions, published } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const saveFetcher = useFetcher<typeof action>();
+  const { pushToast } = useToast();
   const workflowDefinition = useMemo<WorkflowDefinition>(
     () =>
       (workflow.definition ?? { nodes: [], edges: [] }) as unknown as WorkflowDefinition,
@@ -57,9 +98,13 @@ export default function WorkflowDetailRoute() {
   const [selectedExecutionId, setSelectedExecutionId] = useState(executions[0]?.id ?? null);
   const [executionDetail, setExecutionDetail] = useState<ExecutionDetail | null>(null);
   const [liveStatuses, setLiveStatuses] = useState<Record<string, TaskStatus>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(workflow.name ?? "");
+  const [description, setDescription] = useState(workflow.description ?? "");
 
   const detailFetcher = useFetcher<{ execution: ExecutionDetail }>();
-  const streamUrl = selectedExecutionId ? `/api/executions/${selectedExecutionId}/stream` : "";
+  // Only connect to event stream if we have a valid execution ID
+  const streamUrl = selectedExecutionId ? `/api/executions/${selectedExecutionId}/stream` : "data:text/event-stream,";
   const eventStream = useEventSource(streamUrl);
   const lastLoadedExecution = useRef<string | null>(null);
   const lastLoadAt = useRef<number>(0);
@@ -178,32 +223,121 @@ export default function WorkflowDetailRoute() {
   useEffect(() => {
     setDefinition(definitionToReactFlow(workflowDefinition));
     setShowPublishedBanner(published);
+    setName(workflow.name ?? "");
+    setDescription(workflow.description ?? "");
   }, [workflowDefinition]);
+
+  useEffect(() => {
+    if (saveFetcher.data && "error" in saveFetcher.data) {
+      pushToast({ title: "Save failed", description: String(saveFetcher.data.error) });
+    } else if (saveFetcher.data && "saved" in saveFetcher.data) {
+      pushToast({
+        title: saveFetcher.data.published ? "Workflow published" : "Workflow saved",
+        description: saveFetcher.data.published
+          ? "Workflow published successfully."
+          : "Draft updated successfully."
+      });
+      setIsEditing(false);
+    }
+  }, [pushToast, saveFetcher.data]);
 
   return (
     <div className="px-8 py-10 space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-white/50">Workflow</p>
-          <h2 className="text-3xl font-semibold text-white">{workflow.name}</h2>
-          <p className="text-sm text-white/60 mt-2 max-w-3xl">{workflow.description}</p>
+          {isEditing ? (
+            <div className="flex flex-col gap-2 max-w-xl">
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                value={description ?? ""}
+                placeholder="Describe the automation"
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          ) : (
+            <>
+              <h2 className="text-3xl font-semibold text-white">{workflow.name}</h2>
+              <p className="text-sm text-white/60 mt-2 max-w-3xl">{workflow.description}</p>
+            </>
+          )}
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() =>
-            fetcher.submit(
-              {
-                input: JSON.stringify({
-                  employee: { name: "Demo User", email: "demo@flowforge.dev" }
-                })
-              },
-              { method: "post" }
-            )
-          }
-        >
-          Run Workflow
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setIsEditing((prev) => !prev)}
+          >
+            {isEditing ? "Cancel Edit" : "Edit Workflow"}
+          </button>
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() =>
+                  saveFetcher.submit(
+                    {
+                      intent: "update",
+                      name,
+                      description,
+                      definition: JSON.stringify({
+                        nodes: definition.nodes,
+                        edges: definition.edges
+                      })
+                    },
+                    { method: "post" }
+                  )
+                }
+              >
+                Save Draft
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() =>
+                  saveFetcher.submit(
+                    {
+                      intent: "publish",
+                      name,
+                      description,
+                      definition: JSON.stringify({
+                        nodes: definition.nodes,
+                        edges: definition.edges
+                      })
+                    },
+                    { method: "post" }
+                  )
+                }
+              >
+                Publish
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className={`btn-primary ${fetcher.state !== "idle" ? "opacity-60 cursor-not-allowed" : ""}`}
+              disabled={fetcher.state !== "idle"}
+              onClick={() =>
+                fetcher.submit(
+                  {
+                    input: JSON.stringify({
+                      employee: { name: "Demo User", email: "demo@flowforge.dev" }
+                    })
+                  },
+                  { method: "post" }
+                )
+              }
+            >
+              Run Workflow
+            </button>
+          )}
+        </div>
       </header>
 
       {showPublishedBanner ? (
@@ -232,8 +366,8 @@ export default function WorkflowDetailRoute() {
             initialNodes={definition.nodes}
             initialEdges={definition.edges}
             onChange={(payload) => setDefinition(payload)}
-            showPalette={false}
-            interactive={false}
+            showPalette={isEditing}
+            interactive={isEditing}
             nodeStatuses={
               Object.keys(liveStatuses).length > 0
                 ? liveStatuses
