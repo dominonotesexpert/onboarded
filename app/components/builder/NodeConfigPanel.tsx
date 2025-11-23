@@ -1,10 +1,35 @@
+/**
+ * NodeConfigPanel Component
+ *
+ * Side panel for configuring workflow node settings.
+ * Slides in from the right with smooth animations.
+ *
+ * Configuration:
+ * - Label: Display name for the node
+ * - Config (JSON): Node-specific settings (e.g., email address, HTTP URL)
+ * - Execution Mode: Sequential or parallel execution
+ * - Retries: Number of retry attempts on failure
+ * - Timeout: Max execution time in milliseconds
+ * - Priority: Execution priority (higher = earlier)
+ *
+ * Validation:
+ * - JSON syntax validation with error display
+ * - Returns validation result to parent via onSave callback
+ *
+ * @component
+ * @module NodeConfigPanel
+ */
+
 import { motion } from "framer-motion";
 import type { Node } from "reactflow";
 import { useEffect, useState } from "react";
 
 interface NodeConfigPanelProps {
+  /** The React Flow node being configured */
   node: Node;
+  /** Callback to close the panel */
   onClose: () => void;
+  /** Callback when user saves - returns false if validation fails */
   onSave: (config: Record<string, unknown>) => boolean | void;
 }
 

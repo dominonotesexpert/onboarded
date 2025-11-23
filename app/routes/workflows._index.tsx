@@ -1,3 +1,20 @@
+/**
+ * Workflows Index Route
+ *
+ * Lists all workflows with execution statistics and management actions.
+ * Provides overview of automation workflows and quick access to builder.
+ *
+ * Features:
+ * - Grid view of all workflows
+ * - Execution count per workflow
+ * - Edit and delete actions
+ * - Create new workflow button
+ * - Published status indicators
+ * - Last updated timestamps
+ *
+ * @module routes/workflows._index
+ */
+
 import { json } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
@@ -5,6 +22,9 @@ import { listWorkflows, deleteWorkflow } from "~/services/workflows/workflow.ser
 import { listExecutions } from "~/services/execution/execution-service.server";
 import type { WorkflowWithRelations } from "~/types/workflow";
 
+/**
+ * Loader function - fetches all workflows and execution counts
+ */
 export async function loader() {
   const workflows = await listWorkflows();
   const executions = await listExecutions();

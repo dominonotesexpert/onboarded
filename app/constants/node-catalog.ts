@@ -1,10 +1,34 @@
+/**
+ * Node Catalog
+ *
+ * Defines all available workflow node types with their default configurations.
+ * Used by the node palette to display draggable workflow building blocks.
+ *
+ * Each node includes:
+ * - Type identifier (EMAIL, SLACK, HTTP, etc.)
+ * - Display label and description
+ * - Color accent (Tailwind gradient)
+ * - Icon emoji
+ * - Default configuration template
+ * - Execution mode (sequential or parallel)
+ *
+ * @module node-catalog
+ */
+
 export interface NodeCatalogItem {
+  /** Unique node type identifier */
   type: string;
+  /** Display name */
   label: string;
+  /** Short description of node functionality */
   description: string;
+  /** Tailwind gradient classes for visual accent */
   accent: string;
+  /** Emoji icon */
   icon: string;
+  /** Default configuration object with template variables */
   config: Record<string, unknown>;
+  /** Whether node runs sequentially or can run in parallel */
   executionMode?: "sequential" | "parallel";
 }
 

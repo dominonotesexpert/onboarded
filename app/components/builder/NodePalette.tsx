@@ -1,8 +1,26 @@
+/**
+ * NodePalette Component
+ *
+ * Displays a draggable palette of available workflow node types.
+ * Users can either drag nodes onto the canvas or click to add them.
+ *
+ * Features:
+ * - Drag-and-drop support with React Flow
+ * - Click-to-add fallback for accessibility
+ * - Categorized node types from node catalog
+ * - Smooth animations via Framer Motion
+ * - Visual preview with icons and descriptions
+ *
+ * @component
+ * @module NodePalette
+ */
+
 import { motion } from "framer-motion";
 import type { DragEvent } from "react";
 import { nodeCatalog } from "~/constants/node-catalog";
 
 interface NodePaletteProps {
+  /** Callback when user adds a node (via drag or click) */
   onAdd: (type: string) => void;
 }
 

@@ -1,3 +1,23 @@
+/**
+ * GlassNode Component
+ *
+ * Custom React Flow node with glassmorphic design.
+ * Displays workflow automation tasks with status indicators and connection handles.
+ *
+ * Features:
+ * - Glassmorphic design with backdrop blur
+ * - Status indicators (RUNNING, SUCCESS, FAILED, PENDING)
+ * - Validation error highlighting
+ * - Execution mode badge (Sequential/Parallel)
+ * - Delete confirmation dialog
+ * - Hover effects on connection handles
+ * - Color-coded node types
+ * - Smooth animations with Framer Motion
+ *
+ * @component
+ * @module GlassNode
+ */
+
 import type { NodeProps } from "reactflow";
 import { motion } from "framer-motion";
 import { Handle, Position } from "reactflow";
@@ -5,7 +25,14 @@ import { useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 interface GlassNodeProps extends NodeProps {
-  data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string; invalid?: boolean };
+  data: NodeProps["data"] & {
+    /** Callback to delete node */
+    onDelete?: (id: string) => void;
+    /** Current execution status */
+    status?: string;
+    /** Whether node has validation errors */
+    invalid?: boolean
+  };
 }
 
 export function GlassNode({ data, selected, id }: GlassNodeProps) {

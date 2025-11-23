@@ -1,3 +1,26 @@
+/**
+ * Workflow Builder Route (New Workflow)
+ *
+ * Visual workflow builder for creating new automation workflows.
+ * Provides drag-and-drop interface with real-time validation.
+ *
+ * Features:
+ * - Drag-and-drop node palette
+ * - Visual workflow canvas powered by React Flow
+ * - Node configuration panel with JSON editor
+ * - Real-time validation with error highlighting
+ * - Auto-layout for clean diagrams
+ * - Save as draft or publish workflow
+ * - Starts with demo workflow template
+ *
+ * Validation:
+ * - Validates workflow structure before publishing
+ * - Checks for cycles (DAG requirement)
+ * - Validates node-specific configs (email addresses, URLs, etc.)
+ *
+ * @module routes/workflows.new
+ */
+
 import { json, redirect, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Form, useActionData } from "@remix-run/react";
 import { definitionToReactFlow, reactFlowToDefinition } from "~/utils/workflow-transform";
@@ -10,6 +33,9 @@ import type { WorkflowDefinition } from "~/types/workflow";
 import { getValidationIssues } from "~/utils/workflow-validation";
 import { useToast } from "~/components/common/Toaster";
 
+/**
+ * Loader function - provides demo workflow template
+ */
 export async function loader() {
   const template = demoWorkflows[0];
   return json({

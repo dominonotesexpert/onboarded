@@ -1,6 +1,25 @@
+/**
+ * Workflow Transform Utilities
+ *
+ * Converts between workflow definition format and React Flow format.
+ * Enables seamless integration between workflow engine and visual builder.
+ *
+ * Transformations:
+ * - definitionToReactFlow: Engine format -> UI format
+ * - reactFlowToDefinition: UI format -> Engine format
+ *
+ * @module workflow-transform
+ */
+
 import type { Edge, Node } from "reactflow";
 import type { WorkflowDefinition } from "~/types/workflow";
 
+/**
+ * Converts workflow definition to React Flow nodes and edges.
+ *
+ * @param definition - Workflow definition from database
+ * @returns Object with React Flow nodes and edges
+ */
 export function definitionToReactFlow(definition: WorkflowDefinition) {
   const nodes: Node[] = definition.nodes.map((node) => ({
     id: node.id,
@@ -20,6 +39,13 @@ export function definitionToReactFlow(definition: WorkflowDefinition) {
   return { nodes, edges };
 }
 
+/**
+ * Converts React Flow nodes and edges to workflow definition.
+ *
+ * @param nodes - React Flow nodes from builder
+ * @param edges - React Flow edges from builder
+ * @returns Workflow definition ready for execution
+ */
 export function reactFlowToDefinition(nodes: Node[], edges: Edge[]): WorkflowDefinition {
   return {
     nodes: nodes.map((node) => ({

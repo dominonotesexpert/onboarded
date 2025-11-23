@@ -1,3 +1,20 @@
+/**
+ * Dashboard Route
+ *
+ * Real-time monitoring dashboard for all workflow executions.
+ * Displays execution status, logs, and metrics with live SSE updates.
+ *
+ * Features:
+ * - Live execution list with status badges
+ * - Detailed execution view with tasks and logs
+ * - Real-time updates via Server-Sent Events
+ * - Workflow name resolution
+ * - Auto-polling for running executions
+ * - Responsive grid layout
+ *
+ * @module routes/dashboard
+ */
+
 import { json } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -6,6 +23,9 @@ import { listWorkflows } from "~/services/workflows/workflow.server";
 import { useEventSource } from "remix-utils/sse/react";
 import type { ExecutionDetail } from "~/types/workflow";
 
+/**
+ * Loader function - fetches all executions and workflows for dashboard
+ */
 export async function loader() {
   const executions = await listExecutions();
   const workflows = await listWorkflows();

@@ -1,3 +1,30 @@
+/**
+ * Toaster Component
+ *
+ * Provides toast notification system for displaying temporary messages.
+ * Uses Context API for global access and Framer Motion for animations.
+ *
+ * Features:
+ * - Multiple variants (success, error, info, warning)
+ * - Auto-dismiss after configurable duration (default: 4s)
+ * - Stacked notifications with slide-in animations
+ * - Gradient backgrounds per variant
+ * - Global access via useToast hook
+ *
+ * Usage:
+ * ```tsx
+ * const { pushToast } = useToast();
+ * pushToast({
+ *   title: "Success!",
+ *   description: "Action completed",
+ *   variant: "success"
+ * });
+ * ```
+ *
+ * @component
+ * @module Toaster
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { nanoid } from "nanoid";

@@ -1,3 +1,19 @@
+/**
+ * Navbar Component
+ *
+ * Main navigation bar displayed at the top of all pages.
+ * Provides links to key sections with active state highlighting.
+ *
+ * Features:
+ * - Active route highlighting
+ * - Responsive layout
+ * - Glassmorphic design with backdrop blur
+ * - Smooth hover transitions
+ *
+ * @component
+ * @module Navbar
+ */
+
 import { Link, useLocation } from "@remix-run/react";
 
 const links: Array<{

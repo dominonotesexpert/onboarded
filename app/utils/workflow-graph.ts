@@ -1,3 +1,22 @@
+/**
+ * Workflow Graph Utilities
+ *
+ * Builds graph data structures from workflow definitions for execution.
+ * Constructs adjacency maps and identifies entry nodes (no dependencies).
+ *
+ * Graph Structure:
+ * - Adjacency: Map of node ID -> outgoing connections
+ * - Reverse Adjacency: Map of node ID -> incoming connections
+ * - Entry Nodes: Nodes with no incoming edges (start points)
+ *
+ * Used by:
+ * - Workflow engine for topological execution order
+ * - Validation for cycle detection
+ * - UI for rendering flow diagrams
+ *
+ * @module workflow-graph
+ */
+
 import { invariant } from "./invariant";
 import type {
   WorkflowDefinition,
@@ -13,6 +32,13 @@ export interface WorkflowGraph {
   entryNodes: WorkflowNodeDefinition[];
 }
 
+/**
+ * Builds a directed acyclic graph (DAG) from workflow definition.
+ *
+ * @param definition - Workflow with nodes and edges
+ * @returns Graph with adjacency maps and entry nodes
+ * @throws Error if edge references unknown node
+ */
 export function buildWorkflowGraph(definition: WorkflowDefinition): WorkflowGraph {
   const nodes = new Map<string, WorkflowNodeDefinition>();
   const adjacency = new Map<string, string[]>();
