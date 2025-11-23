@@ -111,6 +111,7 @@ export default function WorkflowDetailRoute() {
   const lastLoadedExecution = useRef<string | null>(null);
   const lastLoadAt = useRef<number>(0);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const executionDetailRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!selectedExecutionId) return;
@@ -214,13 +215,29 @@ export default function WorkflowDetailRoute() {
 
   useEffect(() => {
     if (fetcher.data && "executionId" in fetcher.data) {
-      setStatusMessage(`Triggered execution ${fetcher.data.executionId}`);
+      const newExecutionId = fetcher.data.executionId as string;
+      setStatusMessage(`Triggered execution ${newExecutionId}`);
       setErrorMessage(null);
+
+      // Auto-select the new execution
+      setSelectedExecutionId(newExecutionId);
+
+      // Show toast notification
+      pushToast({
+        title: "Workflow execution started",
+        description: `Execution ${newExecutionId} is now running`,
+        variant: "success"
+      });
+
+      // Scroll to execution details section after a brief delay
+      setTimeout(() => {
+        executionDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } else if (fetcher.data && "error" in fetcher.data) {
       setErrorMessage(fetcher.data.error as string);
       setStatusMessage(null);
     }
-  }, [fetcher.data]);
+  }, [fetcher.data, pushToast]);
 
   useEffect(() => {
     setDefinition(definitionToReactFlow(workflowDefinition));
@@ -382,7 +399,7 @@ export default function WorkflowDetailRoute() {
         </ClientOnly>
       </div>
 
-      <section className="space-y-6">
+      <section ref={executionDetailRef} className="space-y-6">
         <p className="text-sm uppercase tracking-[0.4em] text-slate-400 font-medium">Recent Executions</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="space-y-4 lg:col-span-1 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
