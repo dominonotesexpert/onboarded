@@ -9,3 +9,4 @@ package-lock.json
 yarn.lock
 dist
 public/build/
+.claude
