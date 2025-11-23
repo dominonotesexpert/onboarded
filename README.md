@@ -2,6 +2,8 @@
 
 **FlowForge** is a production-grade workflow automation platform that enables teams to design, execute, and monitor complex business process automations through an intuitive visual interface. Built with modern web technologies (Remix, React Flow, Prisma, Effect.js), it demonstrates enterprise-level engineering while maintaining a beautiful, delightful user experience.
 
+<img width="1663" height="854" alt="image" src="https://github.com/user-attachments/assets/4a4bd001-8278-4bbc-a032-0df6c659e32f" />
+
 ### What FlowForge Does
 
 FlowForge transforms complex, multi-step business processes into visual workflows that execute reliably at scale. Instead of writing custom scripts or chaining together disparate tools, teams can drag and drop nodes to create sophisticated automation pipelines with built-in error handling, retry logic, and real-time monitoring.
@@ -63,7 +65,7 @@ This platform goes beyond simple task automation with features like:
 - **Template Support**: Dynamic content with `{{variable}}` interpolation in emails, URLs, and messages
 - **Full API Access**: REST API for programmatic workflow management and execution
 - **Persistent Storage**: PostgreSQL with Prisma ORM for reliable data persistence and audit trails
-<img width="1663" height="854" alt="image" src="https://github.com/user-attachments/assets/4a4bd001-8278-4bbc-a032-0df6c659e32f" />
+
 
 
 ### Features
