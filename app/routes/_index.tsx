@@ -102,7 +102,10 @@ export default function IndexRoute() {
             </p>
             <p className="text-xl font-semibold text-white">{execution.workflowId}</p>
             <p className="text-sm text-white/70">
-              Started {new Date(execution.startedAt).toLocaleTimeString()}
+              Started{" "}
+              <ClientOnly fallback="--">
+                {() => new Date(execution.startedAt).toLocaleTimeString()}
+              </ClientOnly>
             </p>
           </div>
         ))}

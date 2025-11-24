@@ -415,7 +415,10 @@ export default function WorkflowDetailRoute() {
                   <p className="text-xs text-white/60">{execution.duration ?? "--"} ms</p>
                 </div>
                 <p className="text-xs text-white/50 mt-2">
-                  Started {new Date(execution.startedAt).toLocaleString()}
+                  Started{" "}
+                  <ClientOnly fallback="--">
+                    {() => new Date(execution.startedAt).toLocaleString()}
+                  </ClientOnly>
                 </p>
               </button>
             );
@@ -434,14 +437,18 @@ export default function WorkflowDetailRoute() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-white/70">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Started</p>
-                <p>{executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}</p>
+                <p>
+                  <ClientOnly fallback="--">
+                    {() => executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}
+                  </ClientOnly>
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Completed</p>
                 <p>
-                  {executionDetail.completedAt
-                    ? new Date(executionDetail.completedAt).toLocaleString()
-                    : "--"}
+                  <ClientOnly fallback="--">
+                    {() => executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleString() : "--"}
+                  </ClientOnly>
                 </p>
               </div>
               <div>
@@ -465,7 +472,9 @@ export default function WorkflowDetailRoute() {
                       </p>
                     </div>
                     <div className="text-xs text-white/50 text-right">
-                      {task.startedAt ? new Date(task.startedAt).toLocaleTimeString() : "--"}
+                      <ClientOnly fallback="--">
+                        {() => task.startedAt ? new Date(task.startedAt).toLocaleTimeString() : "--"}
+                      </ClientOnly>
                     </div>
                   </div>
                 ))}
@@ -496,7 +505,9 @@ export default function WorkflowDetailRoute() {
                           {log.level}
                         </span>
                         <span className="text-white/50">
-                          {new Date(log.timestamp).toLocaleTimeString()}
+                          <ClientOnly fallback="--">
+                            {() => new Date(log.timestamp).toLocaleTimeString()}
+                          </ClientOnly>
                         </span>
                       </div>
                       <p className="mt-1">{log.message}</p>

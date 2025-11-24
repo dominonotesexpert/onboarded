@@ -22,6 +22,7 @@ import { listExecutions } from "~/services/execution/execution-service.server";
 import { listWorkflows } from "~/services/workflows/workflow.server";
 import { useEventSource } from "remix-utils/sse/react";
 import type { ExecutionDetail } from "~/types/workflow";
+import { ClientOnly } from "~/components/common/ClientOnly";
 
 /**
  * Loader function - fetches all executions and workflows for dashboard
@@ -180,13 +181,15 @@ export default function DashboardRoute() {
               <p>Workflow: {executionDetail.workflowId}</p>
               <p>
                 Started:{" "}
-                {executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}
+                <ClientOnly fallback="--">
+                  {() => executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}
+                </ClientOnly>
               </p>
               <p>
                 Completed:{" "}
-                {executionDetail.completedAt
-                  ? new Date(executionDetail.completedAt).toLocaleString()
-                  : "--"}
+                <ClientOnly fallback="--">
+                  {() => executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleString() : "--"}
+                </ClientOnly>
               </p>
               <p>Duration: {executionDetail.duration ? `${executionDetail.duration} ms` : "--"}</p>
               <p className="text-white/80">Logs:</p>
@@ -199,7 +202,9 @@ export default function DashboardRoute() {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] uppercase tracking-wide text-white/60">{log.level}</span>
                       <span className="text-[10px] text-white/50">
-                        {new Date(log.timestamp).toLocaleTimeString()}
+                        <ClientOnly fallback="--">
+                          {() => new Date(log.timestamp).toLocaleTimeString()}
+                        </ClientOnly>
                       </span>
                     </div>
                     <p className="text-white text-xs">{log.message}</p>
