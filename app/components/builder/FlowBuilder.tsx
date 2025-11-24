@@ -70,6 +70,8 @@ export interface FlowBuilderProps {
   showConfig?: boolean;
   interactive?: boolean;
   nodeStatuses?: Record<string, TaskStatus>;
+  /** Show config tooltip on node hover (read-only view) */
+  showConfigOnHover?: boolean;
 }
 
 export function FlowBuilder(props: FlowBuilderProps) {
@@ -87,7 +89,8 @@ function FlowBuilderCanvas({
   showPalette = true,
   showConfig = true,
   interactive = true,
-  nodeStatuses
+  nodeStatuses,
+  showConfigOnHover = false
 }: FlowBuilderProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -589,10 +592,12 @@ function FlowBuilderCanvas({
         data: {
           ...node.data,
           onDelete: interactive ? deleteNode : undefined,
-          invalid: invalidNodeIds.has(node.id)
+          invalid: invalidNodeIds.has(node.id),
+          showConfigOnHover,
+          status: nodeStatuses?.[node.id]
         }
       })),
-    [deleteNode, interactive, invalidNodeIds, nodes]
+    [deleteNode, interactive, invalidNodeIds, nodes, showConfigOnHover, nodeStatuses]
   );
 
   const edgeOptions = useMemo(
@@ -685,10 +690,10 @@ function FlowBuilderCanvas({
           nodesDraggable={interactive}
           nodesConnectable={interactive}
           elementsSelectable={interactive}
-          panOnDrag={interactive}
-          zoomOnScroll={interactive}
-          zoomOnDoubleClick={interactive}
-          zoomOnPinch={interactive}
+          panOnDrag={true}
+          zoomOnScroll={true}
+          zoomOnDoubleClick={false}
+          zoomOnPinch={true}
           connectionLineStyle={{ stroke: "#38bdf8", strokeWidth: 2 }}
           connectionLineType={ConnectionLineType.SmoothStep}
           className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"

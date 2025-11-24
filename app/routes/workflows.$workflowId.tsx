@@ -384,6 +384,7 @@ export default function WorkflowDetailRoute() {
             onChange={(payload) => setDefinition(payload)}
             showPalette={isEditing}
             interactive={isEditing}
+            showConfigOnHover={!isEditing}
             nodeStatuses={
               Object.keys(liveStatuses).length > 0
                 ? liveStatuses
