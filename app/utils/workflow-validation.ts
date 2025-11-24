@@ -95,6 +95,63 @@ export function getValidationIssues(definition: WorkflowDefinition): ValidationI
     }
   }
 
+  // Validate edges reference existing nodes
+  for (const edge of definition.edges ?? []) {
+    if (!graph.nodes.has(edge.source)) {
+      issues.push({ message: `Edge source "${edge.source}" does not exist.` });
+    }
+    if (!graph.nodes.has(edge.target)) {
+      issues.push({ message: `Edge target "${edge.target}" does not exist.` });
+    }
+  }
+
+  // Ensure we have at least one START and one END
+  const startNodes = Array.from(graph.nodes.values()).filter((n) => n.type === "START");
+  const endNodes = Array.from(graph.nodes.values()).filter((n) => n.type === "END");
+  if (startNodes.length === 0) {
+    issues.push({ message: "Workflow requires at least one START node." });
+  }
+  if (endNodes.length === 0) {
+    issues.push({ message: "Workflow requires at least one END node." });
+  }
+
+  // Connectivity: all nodes must be reachable from a START and able to reach an END
+  if (startNodes.length > 0 && endNodes.length > 0) {
+    const reachableFromStart = new Set<string>();
+    const dfsFromStart = (id: string) => {
+      if (reachableFromStart.has(id)) return;
+      reachableFromStart.add(id);
+      for (const neighbor of graph.adjacency.get(id) ?? []) {
+        dfsFromStart(neighbor);
+      }
+    };
+    startNodes.forEach((n) => dfsFromStart(n.id));
+
+    const canReachEnd = new Set<string>();
+    const dfsToEnd = (id: string) => {
+      if (canReachEnd.has(id)) return;
+      canReachEnd.add(id);
+      for (const parent of graph.reverseAdjacency.get(id) ?? []) {
+        dfsToEnd(parent);
+      }
+    };
+    endNodes.forEach((n) => dfsToEnd(n.id));
+
+    for (const node of graph.nodes.values()) {
+      if (!reachableFromStart.has(node.id)) {
+        issues.push({
+          message: `Node "${node.label ?? node.id}" is not connected to a START node.`,
+          nodeId: node.id
+        });
+      } else if (!canReachEnd.has(node.id)) {
+        issues.push({
+          message: `Node "${node.label ?? node.id}" does not lead to an END node.`,
+          nodeId: node.id
+        });
+      }
+    }
+  }
+
   return issues;
 }
 
