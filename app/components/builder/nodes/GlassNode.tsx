@@ -3,9 +3,18 @@ import { motion } from "framer-motion";
 import { Handle, Position } from "reactflow";
 import { useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
+import { NodeConfigTooltip } from "./NodeConfigTooltip";
 
 interface GlassNodeProps extends NodeProps {
-  data: NodeProps["data"] & { onDelete?: (id: string) => void; status?: string; invalid?: boolean };
+  data: NodeProps["data"] & {
+    onDelete?: (id: string) => void;
+    status?: string;
+    invalid?: boolean;
+    showConfigOnHover?: boolean;
+    config?: Record<string, unknown>;
+    timeout?: number | null;
+    retries?: number | null;
+  };
 }
 
 export function GlassNode({ data, selected, id }: GlassNodeProps) {
@@ -19,6 +28,8 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
   const status = data.status as string | undefined;
   const hasStatus = Boolean(status);
   const invalid = Boolean(data.invalid);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const showConfigOnHover = data.showConfigOnHover ?? false;
 
   const statusStyles =
     invalid
@@ -52,6 +63,8 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
       initial={{ opacity: 0.9, scale: 0.95 }}
       animate={{ opacity: 1, scale: selected ? 1.02 : 1 }}
       className={`rounded-2xl bg-white/5 backdrop-blur-xl px-4 py-3 min-w-[190px] shadow-card relative group transition border ${statusStyles}`}
+      onMouseEnter={() => showConfigOnHover && setShowTooltip(true)}
+      onMouseLeave={() => showConfigOnHover && setShowTooltip(false)}
     >
       {hasStatus ? (
         <span
@@ -182,6 +195,17 @@ export function GlassNode({ data, selected, id }: GlassNodeProps) {
           </div>
         </div>
       ) : null}
+
+      {showConfigOnHover && (
+        <NodeConfigTooltip
+          show={showTooltip}
+          config={data.config || {}}
+          nodeType={data.type as string}
+          label={data.label as string}
+          timeout={data.timeout}
+          retries={data.retries}
+        />
+      )}
     </motion.div>
   );
 }

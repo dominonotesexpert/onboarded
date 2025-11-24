@@ -104,7 +104,7 @@ function Providers({
   locale: string;
   translations: Record<string, Record<string, unknown>>;
 }) {
-  const queryClient = getQueryClient();
+  const [queryClient] = useState(() => getQueryClient());
   const [client] = useState(() => {
     const instance = i18nextClient.cloneInstance();
     applyTranslations(instance, locale, translations);

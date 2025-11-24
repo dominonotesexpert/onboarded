@@ -7,6 +7,7 @@ import { useEventSource } from "remix-utils/sse/react";
 import type { ExecutionDetail } from "~/types/workflow";
 import { Button } from "~/components/common/Button";
 import { Card } from "~/components/common/Card";
+import { ClientOnly } from "~/components/common/ClientOnly";
 
 export async function loader() {
   const executions = await listExecutions();
@@ -189,13 +190,17 @@ export default function DashboardRoute() {
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Started</p>
                   <p className="text-sm text-white font-mono">
-                    {executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}
+                    <ClientOnly fallback="--">
+                      {() => executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleString() : "--"}
+                    </ClientOnly>
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Completed</p>
                   <p className="text-sm text-white font-mono">
-                    {executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleString() : "--"}
+                    <ClientOnly fallback="--">
+                      {() => executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleString() : "--"}
+                    </ClientOnly>
                   </p>
                 </div>
               </div>
@@ -211,7 +216,9 @@ export default function DashboardRoute() {
                       <div className="flex items-center justify-between mb-1">
                         <LogLevel level={log.level} />
                         <span className="text-[10px] text-slate-500 font-mono">
-                          {new Date(log.timestamp).toLocaleTimeString()}
+                          <ClientOnly fallback="--">
+                            {() => new Date(log.timestamp).toLocaleTimeString()}
+                          </ClientOnly>
                         </span>
                       </div>
                       <p className="text-slate-300 text-xs font-mono leading-relaxed">{log.message}</p>

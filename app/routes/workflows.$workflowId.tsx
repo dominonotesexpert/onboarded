@@ -385,6 +385,7 @@ export default function WorkflowDetailRoute() {
               onChange={(payload) => setDefinition(payload)}
               showPalette={isEditing}
               interactive={isEditing}
+              showConfigOnHover={!isEditing}
               nodeStatuses={
                 Object.keys(liveStatuses).length > 0
                   ? liveStatuses
@@ -420,7 +421,9 @@ export default function WorkflowDetailRoute() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-400 font-mono">{execution.id.slice(0, 8)}</span>
                     <span className="text-xs text-slate-500">
-                      {new Date(execution.startedAt).toLocaleTimeString()}
+                      <ClientOnly fallback="--">
+                        {() => new Date(execution.startedAt).toLocaleTimeString()}
+                      </ClientOnly>
                     </span>
                   </div>
                 </Card>
@@ -443,13 +446,17 @@ export default function WorkflowDetailRoute() {
                   <div className="p-3 rounded-lg bg-white/5 border border-white/5">
                     <p className="text-xs text-slate-500 mb-1">Started</p>
                     <p className="text-sm text-white font-mono">
-                      {executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleTimeString() : "--"}
+                      <ClientOnly fallback="--">
+                        {() => executionDetail.startedAt ? new Date(executionDetail.startedAt).toLocaleTimeString() : "--"}
+                      </ClientOnly>
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-white/5 border border-white/5">
                     <p className="text-xs text-slate-500 mb-1">Completed</p>
                     <p className="text-sm text-white font-mono">
-                      {executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleTimeString() : "--"}
+                      <ClientOnly fallback="--">
+                        {() => executionDetail.completedAt ? new Date(executionDetail.completedAt).toLocaleTimeString() : "--"}
+                      </ClientOnly>
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-white/5 border border-white/5">
@@ -497,7 +504,11 @@ export default function WorkflowDetailRoute() {
                         >
                           <div className="flex items-center justify-between mb-1">
                             <LogLevel level={log.level} />
-                            <span className="text-slate-600">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                            <span className="text-slate-600">
+                              <ClientOnly fallback="--">
+                                {() => new Date(log.timestamp).toLocaleTimeString()}
+                              </ClientOnly>
+                            </span>
                           </div>
                           <p className="text-slate-300 break-words">{log.message}</p>
                         </div>

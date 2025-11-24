@@ -1,10 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 
-let client: QueryClient | null = null;
+let browserClient: QueryClient | undefined = undefined;
 
 export function getQueryClient() {
-  if (!client) {
-    client = new QueryClient({
+  // Server: always create a new client for each request
+  if (typeof window === "undefined") {
+    return new QueryClient({
       defaultOptions: {
         queries: {
           staleTime: 1_000 * 30,
@@ -15,5 +16,18 @@ export function getQueryClient() {
     });
   }
 
-  return client;
+  // Browser: create singleton on first call
+  if (!browserClient) {
+    browserClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 1_000 * 30,
+          refetchOnWindowFocus: false,
+          retry: 1
+        }
+      }
+    });
+  }
+
+  return browserClient;
 }
