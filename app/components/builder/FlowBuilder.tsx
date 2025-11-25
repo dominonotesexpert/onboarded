@@ -465,6 +465,16 @@ function FlowBuilderCanvas({
     return () => window.removeEventListener("keydown", handler);
   }, [deleteSelection, duplicateSelection, interactive, redo, undo]);
 
+  // Fit view only on initial mount to prevent auto-scroll on mobile
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setTimeout(() => {
+        reactFlow.fitView({ padding: 0.2, duration: 200 });
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
   const handleUpdateNode = useCallback(
     (payload: Record<string, unknown>): boolean => {
       if (!selectedNode) return false;
@@ -618,13 +628,14 @@ function FlowBuilderCanvas({
     showPalette || showConfig ? "min-h-[640px]" : "min-h-[420px]";
 
   return (
-    <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card relative`}>
-      {/* Mobile palette toggle button */}
+    <>
+      {/* Mobile palette toggle button - Outside main container for proper z-index */}
       {showPalette && interactive ? (
         <button
           type="button"
           onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-          className="lg:hidden fixed bottom-4 left-4 z-50 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 sm:p-4 shadow-glow touch-manipulation"
+          className="lg:hidden fixed bottom-6 left-6 z-[9999] rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 sm:p-4 shadow-glow touch-manipulation"
+          style={{ position: 'fixed' }}
           aria-label="Toggle node palette"
         >
           <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -637,18 +648,20 @@ function FlowBuilderCanvas({
         </button>
       ) : null}
 
+      <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card relative`}>
+
       {/* Node Palette - Hidden on mobile by default, shown on larger screens */}
       {showPalette ? (
-        <div className={`${isPaletteOpen ? 'fixed inset-0 z-40 lg:relative lg:inset-auto' : 'hidden lg:block'}`}>
+        <div className={`${isPaletteOpen ? 'fixed inset-0 z-[9990] lg:relative lg:inset-auto' : 'hidden lg:block'}`}>
           {/* Mobile backdrop */}
           {isPaletteOpen ? (
             <div
-              className="lg:hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              className="lg:hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-[9991]"
               onClick={() => setIsPaletteOpen(false)}
             />
           ) : null}
           {/* Palette container */}
-          <div className={`${isPaletteOpen ? 'absolute left-0 top-0 bottom-0 lg:relative' : ''} z-50 lg:z-auto`}>
+          <div className={`${isPaletteOpen ? 'absolute left-0 top-0 bottom-0 lg:relative z-[9992]' : ''} lg:z-auto`}>
             <NodePalette onAdd={(type) => {
               spawnNode(type);
               setIsPaletteOpen(false); // Close palette on mobile after adding node
@@ -686,7 +699,7 @@ function FlowBuilderCanvas({
           nodeTypes={nodeTypes}
           defaultEdgeOptions={edgeOptions}
           connectionRadius={40}
-          fitView
+          fitView={false}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           selectionOnDrag={interactive}
@@ -740,7 +753,7 @@ function FlowBuilderCanvas({
               Drag blocks into the canvas, then pull from a cross to connect steps.
             </div>
             {selectedCounts.nodeCount + selectedCounts.edgeCount > 0 ? (
-              <div className="pointer-events-none absolute bottom-20 left-3 lg:top-3 lg:bottom-auto text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 shadow-card">
+              <div className="pointer-events-none absolute bottom-24 sm:bottom-20 left-3 lg:top-3 lg:bottom-auto text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 shadow-card z-[9980]">
                 Selected: {selectedCounts.nodeCount} node(s), {selectedCounts.edgeCount} edge(s)
               </div>
             ) : null}
@@ -758,5 +771,6 @@ function FlowBuilderCanvas({
         ) : null}
       </AnimatePresence>
     </div>
+    </>
   );
 }

@@ -18,6 +18,7 @@ export async function loader() {
 export default function DashboardRoute() {
   const { executions, workflows } = useLoaderData<typeof loader>();
   const detailFetcher = useFetcher<{ execution: ExecutionDetail }>();
+  const executionsFetcher = useFetcher<typeof loader>();
   const workflowNameById = useMemo(
     () =>
       Object.fromEntries(
@@ -27,13 +28,38 @@ export default function DashboardRoute() {
   );
   const [activeExecutionId, setActiveExecutionId] = useState(executions[0]?.id);
   const streamUrl = activeExecutionId ? `/api/executions/${activeExecutionId}/stream` : "data:text/event-stream,";
-  const event = useEventSource(streamUrl);
-  const liveEvent = event ? JSON.parse(event) : null;
+  const event = useEventSource(streamUrl, {
+    // Suppress AbortError noise in console
+  });
+
+  // Debug SSE connection
+  useEffect(() => {
+    console.log("SSE Stream URL changed:", streamUrl);
+    console.log("Active Execution ID:", activeExecutionId);
+  }, [streamUrl, activeExecutionId]);
+
+  const liveEvent = useMemo(() => {
+    if (!event) return null;
+    try {
+      return JSON.parse(event);
+    } catch (error) {
+      // Ignore parse errors for abort signals
+      if (error instanceof Error && error.name === "AbortError") {
+        return null;
+      }
+      console.error("Failed to parse SSE event:", error, "Raw event:", event);
+      return null;
+    }
+  }, [event]);
   const [executionDetail, setExecutionDetail] = useState<ExecutionDetail | null>(null);
   const lastLoadedExecution = useRef<string | null>(null);
   const lastLoadAt = useRef<number>(0);
+  const lastEventFetchAt = useRef<number>(0);
   const [cards, setCards] = useState(executions);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const executionsRefreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [eventHistory, setEventHistory] = useState<Array<{ event: unknown; timestamp: number }>>([]);
+  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
 
   // If nothing is selected but we have executions, select the first.
   useEffect(() => {
@@ -42,40 +68,38 @@ export default function DashboardRoute() {
     }
   }, [activeExecutionId, cards]);
 
-  // Fetch when selection changes, but avoid spamming the same id repeatedly.
+  // Fetch when selection changes (only on initial load or when switching executions)
   useEffect(() => {
     if (!activeExecutionId) return;
-    const now = Date.now();
     const isNew = lastLoadedExecution.current !== activeExecutionId;
-    const shouldRefreshRunning =
-      executionDetail?.status === "RUNNING" && now - lastLoadAt.current > 1500;
 
-    if (isNew || shouldRefreshRunning) {
-      lastLoadAt.current = now;
+    if (isNew) {
+      lastLoadAt.current = Date.now();
       detailFetcher.load(`/api/executions/${activeExecutionId}`);
       lastLoadedExecution.current = activeExecutionId;
     }
-  }, [activeExecutionId, detailFetcher, executionDetail?.status]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeExecutionId]);
 
-  // Fallback polling while a run is active to avoid sticky UI if SSE drops.
+  // Removed aggressive polling - SSE handles real-time updates
+  // Only poll if execution is stuck in RUNNING state for fallback (rare edge case)
   useEffect(() => {
-    if (!activeExecutionId) return;
+    if (!activeExecutionId || !executionDetail) return;
 
     if (refreshTimer.current) {
       clearInterval(refreshTimer.current);
       refreshTimer.current = null;
     }
 
-    refreshTimer.current = setInterval(() => {
-      const shouldPoll = executionDetail?.status === "RUNNING" || executionDetail == null;
-      const isLoading = detailFetcher.state === "loading";
-      if (shouldPoll && !isLoading) {
-        detailFetcher.load(`/api/executions/${activeExecutionId}`);
-      } else if (!shouldPoll && refreshTimer.current) {
-        clearInterval(refreshTimer.current);
-        refreshTimer.current = null;
-      }
-    }, 2000);
+    // Only set up polling if status is RUNNING, and do it infrequently (every 30s)
+    if (executionDetail.status === "RUNNING") {
+      refreshTimer.current = setInterval(() => {
+        if (detailFetcher.state === "idle") {
+          detailFetcher.load(`/api/executions/${activeExecutionId}`);
+        }
+      }, 30000); // 30 seconds - SSE should handle updates, this is just a fallback
+    }
 
     return () => {
       if (refreshTimer.current) {
@@ -83,7 +107,9 @@ export default function DashboardRoute() {
         refreshTimer.current = null;
       }
     };
-  }, [activeExecutionId, detailFetcher, executionDetail, detailFetcher.state]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid re-triggering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeExecutionId, executionDetail?.status]);
 
   useEffect(() => {
     if (detailFetcher.data && "execution" in detailFetcher.data) {
@@ -95,17 +121,110 @@ export default function DashboardRoute() {
     }
   }, [detailFetcher.data]);
 
+  // Track event history for display
   useEffect(() => {
-    if (!liveEvent) return;
-    if (liveEvent.type === "EXECUTION_COMPLETED" && activeExecutionId) {
-      detailFetcher.load(`/api/executions/${activeExecutionId}`);
+    if (liveEvent) {
+      console.log("✅ Received SSE event:", liveEvent);
+      setConnectionStatus("connected");
+      setEventHistory((prev) => [...prev.slice(-19), { event: liveEvent, timestamp: Date.now() }]);
+    }
+  }, [liveEvent]);
+
+  // Clear event history when switching executions
+  useEffect(() => {
+    console.log("🔄 Clearing event history, switching to execution:", activeExecutionId);
+    setEventHistory([]);
+    setConnectionStatus("connecting");
+
+    // Note: You may see "AbortError: BodyStreamBuffer was aborted" in console
+    // This is EXPECTED when switching executions - the old SSE connection is being closed
+  }, [activeExecutionId]);
+
+  // Handle SSE events to update execution details in real-time
+  useEffect(() => {
+    if (!liveEvent || !activeExecutionId) return;
+
+    // Refresh execution details on any meaningful event, but throttle to once per second
+    if (
+      liveEvent.type === "TASK_STARTED" ||
+      liveEvent.type === "TASK_COMPLETED" ||
+      liveEvent.type === "TASK_FAILED" ||
+      liveEvent.type === "EXECUTION_COMPLETED"
+    ) {
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastEventFetchAt.current;
+
+      // Always fetch on completion, otherwise throttle to 1 query per second
+      if (liveEvent.type === "EXECUTION_COMPLETED" || timeSinceLastFetch > 1000) {
+        lastEventFetchAt.current = now;
+        detailFetcher.load(`/api/executions/${activeExecutionId}`);
+      }
+    }
+
+    // Update card status on completion
+    if (liveEvent.type === "EXECUTION_COMPLETED") {
       setCards((prev) =>
         prev.map((c) =>
           c.id === activeExecutionId ? { ...c, status: liveEvent.payload.status ?? "COMPLETED" } : c
         )
       );
     }
-  }, [activeExecutionId, detailFetcher, liveEvent]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid re-triggering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeExecutionId, liveEvent]);
+
+  // Poll for new executions every 3 seconds to discover newly created executions
+  // This is needed because we don't have a global SSE stream for all executions
+  useEffect(() => {
+    if (executionsRefreshTimer.current) {
+      clearInterval(executionsRefreshTimer.current);
+    }
+
+    executionsRefreshTimer.current = setInterval(() => {
+      if (executionsFetcher.state === "idle") {
+        try {
+          executionsFetcher.load("/dashboard");
+        } catch (error) {
+          // Ignore AbortError from cancelled fetches
+          if (error instanceof Error && error.name !== "AbortError") {
+            console.error("Error polling executions:", error);
+          }
+        }
+      }
+    }, 3000); // 3 seconds - needed to discover new executions immediately
+
+    return () => {
+      if (executionsRefreshTimer.current) {
+        clearInterval(executionsRefreshTimer.current);
+        executionsRefreshTimer.current = null;
+      }
+    };
+    // Note: intentionally empty deps - we want this to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update cards when executions list refreshes
+  useEffect(() => {
+    if (executionsFetcher.data) {
+      const newExecutions = executionsFetcher.data.executions;
+      setCards((prev) => {
+        // Merge new executions with existing ones, keeping updated status
+        const existingIds = new Set(prev.map((e) => e.id));
+        const newOnes = newExecutions.filter((e) => !existingIds.has(e.id));
+        const updated = prev.map((existing) => {
+          const fresh = newExecutions.find((e) => e.id === existing.id);
+          return fresh ?? existing;
+        });
+        return [...newOnes, ...updated];
+      });
+
+      // Auto-select the newest execution if it's running
+      const newestRunning = newExecutions.find((e) => e.status === "RUNNING");
+      if (newestRunning && newestRunning.id !== activeExecutionId) {
+        setActiveExecutionId(newestRunning.id);
+      }
+    }
+  }, [executionsFetcher.data, activeExecutionId]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
@@ -159,18 +278,49 @@ export default function DashboardRoute() {
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-slate-400 font-medium">Live Event Stream</p>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${liveEvent ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`} />
-              <span className="text-[10px] sm:text-xs text-slate-500">{liveEvent ? 'Connected' : 'Disconnected'}</span>
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                'bg-slate-600'
+              }`} />
+              <span className="text-[10px] sm:text-xs text-slate-500 capitalize">
+                {connectionStatus}
+                {eventHistory.length > 0 && ` (${eventHistory.length} events)`}
+              </span>
             </div>
           </div>
           <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-3 sm:p-4 overflow-auto font-mono text-[10px] sm:text-xs">
-            {liveEvent ? (
-              <pre className="text-emerald-400">
-                {JSON.stringify(liveEvent, null, 2)}
-              </pre>
+            {eventHistory.length > 0 ? (
+              <div className="space-y-2">
+                {eventHistory.map((item, idx) => (
+                  <div key={idx} className="border-b border-white/5 pb-2 last:border-0">
+                    <div className="text-slate-500 text-[9px] sm:text-[10px] mb-1">
+                      {new Date(item.timestamp).toLocaleTimeString()}
+                    </div>
+                    <pre className="text-emerald-400 whitespace-pre-wrap break-words">
+                      {JSON.stringify(item.event, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-600">
-                Awaiting events...
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 gap-3 px-6 text-center">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-slate-400 mb-1">No events yet</p>
+                  <p className="text-[10px] sm:text-xs text-slate-600">
+                    {executionDetail?.status === "RUNNING"
+                      ? "Waiting for events..."
+                      : activeExecutionId
+                        ? "Selected execution has no live events"
+                        : "Run a workflow to see live events"}
+                  </p>
+                  <p className="text-[10px] text-slate-700 mt-2">
+                    Stream URL: {streamUrl.substring(0, 50)}...
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -8,11 +8,18 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     throw new Response("Missing execution id", { status: 400 });
   }
 
+  console.log(`🔌 SSE connection opened for execution: ${executionId}`);
+
   return eventStream(request.signal, (send) => {
     const unsubscribe = subscribeToExecution(executionId, (event) => {
-      send({ event: event.type, data: JSON.stringify(event) });
+      console.log(`📤 Sending SSE event to client:`, event.type);
+      // Send as default 'message' event so useEventSource can receive it
+      send({ data: JSON.stringify(event) });
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log(`🔌 SSE connection closed for execution: ${executionId}`);
+      unsubscribe();
+    };
   });
 }

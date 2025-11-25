@@ -110,41 +110,40 @@ export default function WorkflowDetailRoute() {
   const eventStream = useEventSource(streamUrl);
   const lastLoadedExecution = useRef<string | null>(null);
   const lastLoadAt = useRef<number>(0);
+  const lastEventFetchAt = useRef<number>(0);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const executionDetailRef = useRef<HTMLElement | null>(null);
 
+  // Fetch execution details only when switching to a new execution
   useEffect(() => {
     if (!selectedExecutionId) return;
-
-    const now = Date.now();
-    const shouldRefreshRunning =
-      executionDetail?.status === "RUNNING" && now - lastLoadAt.current > 1500;
     const isNewSelection = lastLoadedExecution.current !== selectedExecutionId;
 
-    if (isNewSelection || shouldRefreshRunning) {
-      lastLoadAt.current = now;
+    if (isNewSelection) {
+      lastLoadAt.current = Date.now();
       detailFetcher.load(`/api/executions/${selectedExecutionId}`);
       lastLoadedExecution.current = selectedExecutionId;
     }
-  }, [detailFetcher, executionDetail?.status, selectedExecutionId]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedExecutionId]);
 
-  // Fallback auto-poll while RUNNING to avoid sticky UI if SSE misses.
+  // Removed aggressive polling - SSE handles real-time updates
+  // Light fallback polling only for RUNNING executions (30s interval)
   useEffect(() => {
-    if (!selectedExecutionId) return;
+    if (!selectedExecutionId || !executionDetail) return;
 
     if (refreshTimer.current) {
       clearInterval(refreshTimer.current);
       refreshTimer.current = null;
     }
 
-    refreshTimer.current = setInterval(() => {
-      if (executionDetail?.status === "RUNNING") {
+    // Only poll if execution is RUNNING, and do it infrequently (30s)
+    if (executionDetail.status === "RUNNING") {
+      refreshTimer.current = setInterval(() => {
         detailFetcher.load(`/api/executions/${selectedExecutionId}`);
-      } else if (refreshTimer.current) {
-        clearInterval(refreshTimer.current);
-        refreshTimer.current = null;
-      }
-    }, 2000);
+      }, 30000); // 30 seconds instead of 2 seconds
+    }
 
     return () => {
       if (refreshTimer.current) {
@@ -152,7 +151,9 @@ export default function WorkflowDetailRoute() {
         refreshTimer.current = null;
       }
     };
-  }, [detailFetcher, executionDetail?.status, selectedExecutionId]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid re-triggering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedExecutionId, executionDetail?.status]);
 
   useEffect(() => {
     if (detailFetcher.data?.execution) {
@@ -192,26 +193,39 @@ export default function WorkflowDetailRoute() {
     }
   }, [detailFetcher.data]);
 
+  // Handle SSE events for real-time updates with throttling
   useEffect(() => {
     if (!eventStream) return;
     const parsed = JSON.parse(eventStream);
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastEventFetchAt.current;
+
     if (parsed.type === "TASK_STARTED") {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "RUNNING" as TaskStatus }));
     } else if (parsed.type === "TASK_COMPLETED") {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "SUCCESS" as TaskStatus }));
-      // Refresh details during long runs so the UI does not stick on the last visible task.
-      if (selectedExecutionId) {
+      // Throttle to max 1 fetch per second
+      if (selectedExecutionId && timeSinceLastFetch > 1000) {
+        lastEventFetchAt.current = now;
         detailFetcher.load(`/api/executions/${selectedExecutionId}`);
       }
     } else if (parsed.type === "TASK_FAILED") {
       setLiveStatuses((prev) => ({ ...prev, [parsed.payload.nodeId]: "FAILED" as TaskStatus }));
-      detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      // Throttle to max 1 fetch per second
+      if (timeSinceLastFetch > 1000) {
+        lastEventFetchAt.current = now;
+        detailFetcher.load(`/api/executions/${selectedExecutionId}`);
+      }
     } else if (parsed.type === "EXECUTION_COMPLETED") {
+      // Always fetch immediately on completion
       if (selectedExecutionId) {
+        lastEventFetchAt.current = now;
         detailFetcher.load(`/api/executions/${selectedExecutionId}`);
       }
     }
-  }, [detailFetcher, eventStream, selectedExecutionId]);
+    // Note: intentionally NOT including detailFetcher in deps to avoid re-triggering
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventStream, selectedExecutionId]);
 
   useEffect(() => {
     if (fetcher.data && "executionId" in fetcher.data) {

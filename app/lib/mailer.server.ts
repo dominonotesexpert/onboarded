@@ -6,7 +6,7 @@ function getTransporter(): Transporter {
   if (cachedTransporter) return cachedTransporter;
 
   const host = process.env.MAIL_SMTP_HOST;
-  const port = Number(process.env.MAIL_SMTP_PORT ?? 587);
+  const port = Number(process.env.MAIL_SMTP_PORT ?? 2587);
   const user = process.env.MAIL_SMTP_USER;
   const pass = process.env.MAIL_SMTP_PASS;
 
