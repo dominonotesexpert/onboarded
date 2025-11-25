@@ -33,30 +33,30 @@ export default function IndexRoute() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12 lg:py-20 space-y-20">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12 lg:py-20 space-y-12 sm:space-y-16 lg:space-y-20">
       {/* Hero Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        <div className="space-y-8 relative">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+        <div className="space-y-6 sm:space-y-8 relative">
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none" />
 
-          <div className="space-y-4 relative">
-            <div className="inline-flex items-center px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-medium tracking-wider uppercase">
+          <div className="space-y-3 sm:space-y-4 relative">
+            <div className="inline-flex items-center px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[10px] sm:text-xs font-medium tracking-wider uppercase">
               {t("app.tagline")}
             </div>
-            <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight">
               Build workflows <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-gradient">
                 visually.
               </span>
             </h1>
-            <p className="text-lg text-slate-300 max-w-xl leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-300 max-w-xl leading-relaxed">
               FlowForge pairs a delightful drag-and-drop builder with a production-grade execution
               engine powered by Effect, Prisma, and Remix. Automate onboarding, revenue ops, or
               anything in between.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3 sm:gap-4">
             <Button href="/workflows/new" size="lg" rightIcon={<span>→</span>}>
               {t("app.cta")}
             </Button>
@@ -65,7 +65,7 @@ export default function IndexRoute() {
             </Button>
           </div>
 
-          <dl className="grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
+          <dl className="grid grid-cols-3 gap-4 sm:gap-6 lg:gap-8 pt-6 sm:pt-8 border-t border-white/5">
             <Metric value={data.metrics.automations} label="Automations" />
             <Metric value={`${data.metrics.successRate * 100}%`} label="Success rate" />
             <Metric value={data.metrics.avgDuration} label="Avg duration" />
@@ -74,22 +74,22 @@ export default function IndexRoute() {
 
         <div className="relative group perspective-1000">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-          <div className="relative glass rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden transform transition-transform duration-500 group-hover:scale-[1.01] group-hover:rotate-1">
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5 backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+          <div className="relative glass rounded-2xl sm:rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden transform transition-transform duration-500 group-hover:scale-[1.01] group-hover:rotate-1">
+            <div className="flex items-center justify-between p-3 sm:p-6 border-b border-white/5 bg-white/5 backdrop-blur-md">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="flex gap-1 sm:gap-1.5">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500/20 border border-green-500/50" />
                 </div>
-                <div className="h-4 w-px bg-white/10 mx-2" />
-                <p className="text-sm font-medium text-slate-300">{data.heroWorkflow.name}</p>
+                <div className="h-3 sm:h-4 w-px bg-white/10 mx-1 sm:mx-2" />
+                <p className="text-xs sm:text-sm font-medium text-slate-300 truncate">{data.heroWorkflow.name}</p>
               </div>
-              <div className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium">
+              <div className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] sm:text-xs font-medium whitespace-nowrap">
                 Live Builder
               </div>
             </div>
-            <div className="h-[500px] relative bg-midnight/50">
+            <div className="h-[300px] sm:h-[400px] lg:h-[500px] relative bg-midnight/50">
               <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-slate-500">Loading builder...</div>}>
                 {() => (
                   <FlowBuilder
@@ -110,13 +110,14 @@ export default function IndexRoute() {
 
       {/* Recent Executions */}
       <section>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-white">Recent Executions</h2>
+        <div className="flex items-center justify-between mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Recent Executions</h2>
           <Button href="/dashboard" variant="ghost" size="sm" rightIcon={<span>→</span>}>
-            View all
+            <span className="hidden sm:inline">View all</span>
+            <span className="sm:hidden">All</span>
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           {data.executions.map((execution) => (
             <Card key={execution.id} hover className="group relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
@@ -148,9 +149,9 @@ export default function IndexRoute() {
 
 function Metric({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="space-y-1">
-      <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
-      <p className="text-xs uppercase tracking-wider text-slate-500 font-medium">{label}</p>
+    <div className="space-y-0.5 sm:space-y-1">
+      <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">{value}</p>
+      <p className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-medium">{label}</p>
     </div>
   );
 }

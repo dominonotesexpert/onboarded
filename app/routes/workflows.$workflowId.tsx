@@ -262,12 +262,12 @@ export default function WorkflowDetailRoute() {
   }, [pushToast, saveFetcher.data]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-8">
-        <div className="flex-1">
-          <p className="text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-2">Workflow</p>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <header className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6 border-b border-white/5 pb-6 sm:pb-8">
+        <div className="flex-1 w-full lg:w-auto min-w-0">
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-1 sm:mb-2">Workflow</p>
           {isEditing ? (
-            <div className="flex flex-col gap-3 max-w-xl">
+            <div className="flex flex-col gap-2 sm:gap-3 max-w-xl">
               <input
                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none"
                 value={name}
@@ -282,22 +282,24 @@ export default function WorkflowDetailRoute() {
             </div>
           ) : (
             <>
-              <h2 className="text-3xl font-bold text-white tracking-tight">{workflow.name}</h2>
-              <p className="text-sm text-slate-400 mt-2 max-w-3xl leading-relaxed">{workflow.description}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{workflow.name}</h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 sm:mt-2 max-w-3xl leading-relaxed">{workflow.description}</p>
             </>
           )}
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
           <Button
             variant="secondary"
             onClick={() => setIsEditing((prev) => !prev)}
+            className="flex-1 sm:flex-none whitespace-nowrap"
           >
-            {isEditing ? "Cancel Edit" : "Edit Workflow"}
+            {isEditing ? "Cancel" : "Edit"}
           </Button>
           {isEditing ? (
             <>
               <Button
                 variant="secondary"
+                className="flex-1 sm:flex-none whitespace-nowrap"
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -313,9 +315,10 @@ export default function WorkflowDetailRoute() {
                   )
                 }
               >
-                Save Draft
+                Save
               </Button>
               <Button
+                className="flex-1 sm:flex-none whitespace-nowrap"
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -338,6 +341,7 @@ export default function WorkflowDetailRoute() {
             <Button
               disabled={fetcher.state !== "idle"}
               isLoading={fetcher.state !== "idle"}
+              className="flex-1 sm:flex-none whitespace-nowrap"
               onClick={() =>
                 fetcher.submit(
                   {
@@ -350,7 +354,8 @@ export default function WorkflowDetailRoute() {
               }
               rightIcon={<span>▶</span>}
             >
-              Run Workflow
+              <span className="hidden sm:inline">Run Workflow</span>
+              <span className="sm:hidden">Run</span>
             </Button>
           )}
         </div>
@@ -375,7 +380,7 @@ export default function WorkflowDetailRoute() {
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm">{statusMessage}</div>
       ) : null}
 
-      <div className="h-[640px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm">
+      <div className="h-[400px] sm:h-[500px] lg:h-[640px] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm">
         <ClientOnly fallback={<div className="h-full w-full bg-white/5 animate-pulse" />}>
           {() => (
             <FlowBuilder
@@ -400,10 +405,10 @@ export default function WorkflowDetailRoute() {
         </ClientOnly>
       </div>
 
-      <section ref={executionDetailRef} className="space-y-6">
-        <p className="text-sm uppercase tracking-[0.4em] text-slate-400 font-medium">Recent Executions</p>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-4 lg:col-span-1 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+      <section ref={executionDetailRef} className="space-y-4 sm:space-y-6">
+        <p className="text-xs sm:text-sm uppercase tracking-[0.4em] text-slate-400 font-medium">Recent Executions</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4 lg:col-span-1 max-h-[400px] sm:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             {executionList.map((execution) => {
               const active = execution.id === selectedExecutionId;
               return (
@@ -431,18 +436,18 @@ export default function WorkflowDetailRoute() {
             })}
           </div>
 
-          <Card className="lg:col-span-2 flex flex-col h-[600px]">
+          <Card className="lg:col-span-2 flex flex-col h-[400px] sm:h-[500px] lg:h-[600px]">
             {executionDetail ? (
               <>
-                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-1">Execution Detail</p>
-                    <p className="text-lg text-white font-semibold font-mono">{executionDetail.id}</p>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6 border-b border-white/5 pb-3 sm:pb-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-1">Execution Detail</p>
+                    <p className="text-base sm:text-lg text-white font-semibold font-mono truncate">{executionDetail.id}</p>
                   </div>
                   <StatusBadge status={executionDetail.status} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="p-3 rounded-lg bg-white/5 border border-white/5">
                     <p className="text-xs text-slate-500 mb-1">Started</p>
                     <p className="text-sm text-white font-mono">

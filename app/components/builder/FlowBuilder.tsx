@@ -67,12 +67,13 @@ function FlowBuilderCanvas({
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [showValidationMessage, setShowValidationMessage] = useState(true);
   const [hasEdited, setHasEdited] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const historyRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([
     { nodes: initialNodes, edges: initialEdges }
   ]);
   const historyIndexRef = useRef(0);
   const applyingHistoryRef = useRef(false);
-  const { pushToast } = useToast();
+  const { pushToast} = useToast();
   const lastToastAtRef = useRef<number>(0);
   const reactFlow = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -617,12 +618,49 @@ function FlowBuilderCanvas({
     showPalette || showConfig ? "min-h-[640px]" : "min-h-[420px]";
 
   return (
-    <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card`}>
-      {showPalette ? <NodePalette onAdd={(type) => spawnNode(type)} /> : null}
-      <main className="flex-1 relative" ref={wrapperRef}>
+    <div className={`flex h-full ${minHeightClass} bg-midnight/70 rounded-3xl border border-white/10 overflow-hidden shadow-card relative`}>
+      {/* Mobile palette toggle button */}
+      {showPalette && interactive ? (
+        <button
+          type="button"
+          onClick={() => setIsPaletteOpen(!isPaletteOpen)}
+          className="lg:hidden fixed bottom-4 left-4 z-50 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white p-3 sm:p-4 shadow-glow touch-manipulation"
+          aria-label="Toggle node palette"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isPaletteOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            )}
+          </svg>
+        </button>
+      ) : null}
+
+      {/* Node Palette - Hidden on mobile by default, shown on larger screens */}
+      {showPalette ? (
+        <div className={`${isPaletteOpen ? 'fixed inset-0 z-40 lg:relative lg:inset-auto' : 'hidden lg:block'}`}>
+          {/* Mobile backdrop */}
+          {isPaletteOpen ? (
+            <div
+              className="lg:hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              onClick={() => setIsPaletteOpen(false)}
+            />
+          ) : null}
+          {/* Palette container */}
+          <div className={`${isPaletteOpen ? 'absolute left-0 top-0 bottom-0 lg:relative' : ''} z-50 lg:z-auto`}>
+            <NodePalette onAdd={(type) => {
+              spawnNode(type);
+              setIsPaletteOpen(false); // Close palette on mobile after adding node
+            }} />
+          </div>
+        </div>
+      ) : null}
+
+      <main className="flex-1 relative w-full" ref={wrapperRef}>
         {interactive && hasEdited && validationMessage && showValidationMessage ? (
-          <div className="pointer-events-auto absolute top-3 left-64 right-64 z-30 flex justify-center">
-            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-100 text-xs px-4 py-2.5 shadow-card flex items-start gap-3 max-w-lg">
+          <div className="pointer-events-auto absolute top-3 left-3 right-3 lg:left-64 lg:right-64 z-30 flex justify-center">
+            <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 text-amber-100 text-xs px-4 py-2.5 shadow-card flex items-start gap-3 max-w-lg w-full lg:w-auto">
               <span className="flex-1">{validationMessage}</span>
               <button
                 type="button"
@@ -675,34 +713,34 @@ function FlowBuilderCanvas({
         </ReactFlow>
         {interactive ? (
           <>
-            <div className="pointer-events-auto absolute top-3 right-3 flex gap-2 z-20">
+            <div className="pointer-events-auto absolute top-3 right-3 flex flex-wrap gap-1.5 sm:gap-2 z-20 max-w-[calc(100%-1.5rem)]">
               <button
                 type="button"
                 onClick={undo}
-                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+                className="text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 hover:bg-white/15 whitespace-nowrap touch-manipulation"
               >
                 Undo
               </button>
               <button
                 type="button"
                 onClick={redo}
-                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+                className="text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 hover:bg-white/15 whitespace-nowrap touch-manipulation"
               >
                 Redo
               </button>
               <button
                 type="button"
                 onClick={autoLayout}
-                className="text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 hover:bg-white/15"
+                className="text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 hover:bg-white/15 whitespace-nowrap touch-manipulation"
               >
-                Auto Layout
+                Layout
               </button>
             </div>
-            <div className="pointer-events-none absolute top-12 right-4 text-xs text-white/70 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 shadow-card">
+            <div className="pointer-events-none hidden md:block absolute top-12 right-4 text-xs text-white/70 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 shadow-card max-w-xs">
               Drag blocks into the canvas, then pull from a cross to connect steps.
             </div>
             {selectedCounts.nodeCount + selectedCounts.edgeCount > 0 ? (
-              <div className="pointer-events-none absolute top-3 left-3 text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-3 py-1 shadow-card">
+              <div className="pointer-events-none absolute bottom-20 left-3 lg:top-3 lg:bottom-auto text-[10px] sm:text-xs text-white/80 bg-white/10 border border-white/15 rounded-full px-2 sm:px-3 py-1 shadow-card">
                 Selected: {selectedCounts.nodeCount} node(s), {selectedCounts.edgeCount} edge(s)
               </div>
             ) : null}

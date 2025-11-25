@@ -108,18 +108,19 @@ export default function DashboardRoute() {
   }, [activeExecutionId, detailFetcher, liveEvent]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 space-y-8">
-      <header className="flex items-center justify-between">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-2">Monitoring</p>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Execution Dashboard</h2>
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-1 sm:mb-2">Monitoring</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Execution Dashboard</h2>
         </div>
         <Button href="/workflows" variant="secondary" rightIcon={<span>→</span>}>
-          Manage Workflows
+          <span className="hidden sm:inline">Manage Workflows</span>
+          <span className="sm:hidden">Workflows</span>
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((execution) => (
           <Card
             key={execution.id}
@@ -153,16 +154,16 @@ export default function DashboardRoute() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="flex flex-col h-[600px]">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400 font-medium">Live Event Stream</p>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${liveEvent ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`} />
-              <span className="text-xs text-slate-500">{liveEvent ? 'Connected' : 'Disconnected'}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <Card className="flex flex-col h-[400px] sm:h-[500px] lg:h-[600px]">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-slate-400 font-medium">Live Event Stream</p>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${liveEvent ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`} />
+              <span className="text-[10px] sm:text-xs text-slate-500">{liveEvent ? 'Connected' : 'Disconnected'}</span>
             </div>
           </div>
-          <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-4 overflow-auto font-mono text-xs">
+          <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-3 sm:p-4 overflow-auto font-mono text-[10px] sm:text-xs">
             {liveEvent ? (
               <pre className="text-emerald-400">
                 {JSON.stringify(liveEvent, null, 2)}
@@ -175,18 +176,18 @@ export default function DashboardRoute() {
           </div>
         </Card>
 
-        <Card className="flex flex-col h-[600px]">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-slate-400 font-medium mb-1">Execution Detail</p>
-              <p className="text-white font-semibold text-lg font-mono">{executionDetail?.id ?? "Select a run"}</p>
+        <Card className="flex flex-col h-[400px] sm:h-[500px] lg:h-[600px]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm uppercase tracking-[0.2em] text-slate-400 font-medium mb-1">Execution Detail</p>
+              <p className="text-white font-semibold text-base sm:text-lg font-mono truncate">{executionDetail?.id ?? "Select a run"}</p>
             </div>
             {executionDetail && <StatusBadge status={executionDetail.status} />}
           </div>
 
           {executionDetail ? (
-            <div className="flex-1 overflow-hidden flex flex-col gap-6">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex-1 overflow-hidden flex flex-col gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 rounded-xl border border-white/5">
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Started</p>
                   <p className="text-sm text-white font-mono">

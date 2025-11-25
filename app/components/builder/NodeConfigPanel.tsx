@@ -24,21 +24,28 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
   }, [node]);
 
   return (
-    <motion.aside
-      initial={{ x: 400, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 400, opacity: 0 }}
-      className="w-96 border-l border-white/10 bg-midnight/80 backdrop-blur-xl p-6 space-y-4 overflow-y-auto"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-white/50">Node Config</p>
-                    <h3 className="text-xl font-semibold text-white mt-1">{(node.data as { type?: string })?.type ?? node.type}</h3>
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="lg:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40"
+        onClick={onClose}
+      />
+
+      <motion.aside
+        initial={{ x: 400, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 400, opacity: 0 }}
+        className="fixed lg:relative inset-x-0 bottom-0 lg:inset-auto w-full lg:w-96 max-h-[80vh] lg:max-h-none border-l-0 lg:border-l border-t lg:border-t-0 border-white/10 bg-midnight/95 lg:bg-midnight/80 backdrop-blur-xl p-4 sm:p-6 space-y-4 overflow-y-auto z-50 rounded-t-3xl lg:rounded-none"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-white/50">Node Config</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-white mt-1">{(node.data as { type?: string })?.type ?? node.type}</h3>
+          </div>
+          <button onClick={onClose} className="text-white/60 hover:text-white text-sm touch-manipulation">
+            Close
+          </button>
         </div>
-        <button onClick={onClose} className="text-white/60 hover:text-white text-sm">
-          Close
-        </button>
-      </div>
 
       <label className="space-y-2 block">
         <span className="text-xs uppercase text-white/50 tracking-[0.3em]">Label</span>
@@ -52,7 +59,7 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
       <label className="space-y-2 block">
         <span className="text-xs uppercase text-white/50 tracking-[0.3em]">Config JSON</span>
         <textarea
-          className="w-full h-64 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white/80"
+          className="w-full h-48 sm:h-64 bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white/80"
           value={config}
           onChange={(event) => setConfig(event.target.value)}
         />
@@ -71,7 +78,7 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
       </label>
 
       <button
-        className="btn-primary w-full justify-center"
+        className="btn-primary w-full justify-center touch-manipulation"
         onClick={() => {
           try {
             const parsed = JSON.parse(config);
@@ -88,6 +95,7 @@ export function NodeConfigPanel({ node, onClose, onSave }: NodeConfigPanelProps)
       >
         Save
       </button>
-    </motion.aside>
+      </motion.aside>
+    </>
   );
 }

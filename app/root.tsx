@@ -76,7 +76,7 @@ export default function App() {
       <body className="h-full bg-midnight text-slate-200 antialiased selection:bg-primary/30 selection:text-white">
         <Providers locale={data.locale} translations={data.translations}>
           <Navbar />
-          <main className="relative z-10 min-h-screen pb-16 pt-24">
+          <main className="relative z-10 min-h-screen pb-12 sm:pb-16 pt-16 sm:pt-24">
             <Outlet />
           </main>
         </Providers>
