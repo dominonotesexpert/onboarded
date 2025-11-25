@@ -31,20 +31,20 @@ export default function IndexRoute() {
   );
 
   return (
-    <div className="px-8 py-12 space-y-12">
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-        <div className="space-y-6">
-          <p className="text-sm uppercase tracking-[0.4em] text-emerald-300/80">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 sm:space-y-12">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+        <div className="space-y-4 sm:space-y-6">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-300/80">
             {t("app.tagline")}
           </p>
-          <h1 className="text-5xl font-bold text-white leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
             Build workflows visually.
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
               {" "}
               Observe them in real-time.
             </span>
           </h1>
-          <p className="text-lg text-white/70 max-w-xl">
+          <p className="text-base sm:text-lg text-white/70 max-w-xl">
             FlowForge pairs a delightful drag-and-drop builder with a production-grade execution
             engine powered by Effect, Prisma, and Remix. Automate onboarding, revenue ops, or
             anything in between.
@@ -59,7 +59,7 @@ export default function IndexRoute() {
             </Link>
           </div>
 
-          <dl className="grid grid-cols-3 gap-6 text-center">
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
             <Metric value={data.metrics.automations} label="Automations" />
             <Metric value={`${data.metrics.successRate * 100}%`} label="Success rate" />
             <Metric value={data.metrics.avgDuration} label="Avg duration" />
@@ -116,9 +116,9 @@ export default function IndexRoute() {
 
 function Metric({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className="text-3xl font-semibold text-white">{value}</p>
-      <p className="text-xs uppercase tracking-[0.4em] text-white/60 mt-2">{label}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+      <p className="text-2xl sm:text-3xl font-semibold text-white">{value}</p>
+      <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em] text-white/60 mt-1 sm:mt-2">{label}</p>
     </div>
   );
 }

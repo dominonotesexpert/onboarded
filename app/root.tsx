@@ -76,7 +76,7 @@ export default function App() {
       <body className="antialiased">
         <Providers locale={data.locale} translations={data.translations}>
           <Navbar />
-          <main className="pb-16">
+          <main className="pb-16" style={{ isolation: "isolate" }}>
             <Outlet />
           </main>
         </Providers>

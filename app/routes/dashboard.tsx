@@ -126,13 +126,13 @@ export default function DashboardRoute() {
   }, [activeExecutionId, detailFetcher, liveEvent]);
 
   return (
-    <div className="px-8 py-10 space-y-8">
-      <header className="flex items-center justify-between">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-white/50">Monitoring</p>
-          <h2 className="text-3xl font-semibold text-white">Execution Dashboard</h2>
+          <p className="text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em] text-white/50">Monitoring</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white mt-1">Execution Dashboard</h2>
         </div>
-        <Link to="/workflows" className="btn-secondary">
+        <Link to="/workflows" className="btn-secondary whitespace-nowrap">
           Manage Workflows
         </Link>
       </header>

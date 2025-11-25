@@ -258,19 +258,19 @@ export default function WorkflowDetailRoute() {
   }, [pushToast, saveFetcher.data]);
 
   return (
-    <div className="px-8 py-10 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-white/50">Workflow</p>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em] text-white/50">Workflow</p>
           {isEditing ? (
-            <div className="flex flex-col gap-2 max-w-xl">
+            <div className="flex flex-col gap-2 max-w-xl mt-2">
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm sm:text-base text-white"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm sm:text-base text-white"
                 value={description ?? ""}
                 placeholder="Describe the automation"
                 onChange={(e) => setDescription(e.target.value)}
@@ -278,24 +278,24 @@ export default function WorkflowDetailRoute() {
             </div>
           ) : (
             <>
-              <h2 className="text-3xl font-semibold text-white">{workflow.name}</h2>
-              <p className="text-sm text-white/60 mt-2 max-w-3xl">{workflow.description}</p>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-white mt-1">{workflow.name}</h2>
+              <p className="text-xs sm:text-sm text-white/60 mt-2 max-w-3xl">{workflow.description}</p>
             </>
           )}
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             type="button"
-            className="btn-secondary"
+            className="btn-secondary text-xs sm:text-sm whitespace-nowrap"
             onClick={() => setIsEditing((prev) => !prev)}
           >
-            {isEditing ? "Cancel Edit" : "Edit Workflow"}
+            {isEditing ? "Cancel" : "Edit"}
           </button>
           {isEditing ? (
             <>
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-secondary text-xs sm:text-sm whitespace-nowrap"
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -315,7 +315,7 @@ export default function WorkflowDetailRoute() {
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-primary text-xs sm:text-sm whitespace-nowrap"
                 onClick={() =>
                   saveFetcher.submit(
                     {
@@ -337,7 +337,7 @@ export default function WorkflowDetailRoute() {
           ) : (
             <button
               type="button"
-              className={`btn-primary ${fetcher.state !== "idle" ? "opacity-60 cursor-not-allowed" : ""}`}
+              className={`btn-primary text-xs sm:text-sm whitespace-nowrap ${fetcher.state !== "idle" ? "opacity-60 cursor-not-allowed" : ""}`}
               disabled={fetcher.state !== "idle"}
               onClick={() =>
                 fetcher.submit(
@@ -350,7 +350,7 @@ export default function WorkflowDetailRoute() {
                 )
               }
             >
-              Run Workflow
+              Run
             </button>
           )}
         </div>

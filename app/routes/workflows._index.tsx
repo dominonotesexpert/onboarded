@@ -44,13 +44,13 @@ export default function WorkflowsRoute() {
   const fetcher = useFetcher();
 
   return (
-    <div className="px-8 py-10 space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-white/50">Workflows</p>
-          <h2 className="text-3xl font-semibold text-white mt-2">Automation Library</h2>
+          <p className="text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em] text-white/50">Workflows</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white mt-1 sm:mt-2">Automation Library</h2>
         </div>
-        <Link to="/workflows/new" className="btn-primary">
+        <Link to="/workflows/new" className="btn-primary whitespace-nowrap">
           New Workflow
         </Link>
       </header>
