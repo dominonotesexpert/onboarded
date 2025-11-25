@@ -472,10 +472,10 @@ export default function WorkflowDetailRoute() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 flex-1 min-h-0">
                   <div className="flex flex-col min-h-0">
-                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-3">Tasks</p>
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-2 sm:mb-3">Tasks</p>
+                    <div className="flex-1 overflow-y-auto space-y-1.5 sm:space-y-2 pr-2 custom-scrollbar">
                       {(executionDetail.tasks ?? []).map((task) => (
                         <div
                           key={task.id}
@@ -500,8 +500,8 @@ export default function WorkflowDetailRoute() {
                   </div>
 
                   <div className="flex flex-col min-h-0">
-                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-3">Logs</p>
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.35em] text-slate-400 font-medium mb-2 sm:mb-3">Logs</p>
+                    <div className="flex-1 overflow-y-auto space-y-1.5 sm:space-y-2 pr-2 custom-scrollbar">
                       {(executionDetail.logs ?? []).map((log) => (
                         <div
                           key={log.id}

@@ -26,18 +26,19 @@ export default function WorkflowsRoute() {
   const fetcher = useFetcher();
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 space-y-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-2">Workflows</p>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Automation Library</h2>
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-1 sm:mb-2">Workflows</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Automation Library</h2>
         </div>
         <Button href="/workflows/new" leftIcon={<span>+</span>}>
-          New Workflow
+          <span className="hidden sm:inline">New Workflow</span>
+          <span className="sm:hidden">New</span>
         </Button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {workflows.map((workflow) => {
           const typedWorkflow = workflow as unknown as WorkflowWithRelations;
           const workflowExecutions = executions.filter((execution) => execution.workflowId === workflow.id);

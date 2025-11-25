@@ -86,24 +86,25 @@ export default function NewWorkflowRoute() {
   }, [actionData, pushToast]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 space-y-8">
-      <Form method="post" reloadDocument className="space-y-8">
-        <header className="flex flex-wrap items-end justify-between gap-4 border-b border-white/5 pb-8">
-          <div className="flex-1 min-w-[240px]">
-            <p className="text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-2">Builder</p>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Create Workflow</h2>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      <Form method="post" reloadDocument className="space-y-6 sm:space-y-8">
+        <header className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-4 sm:gap-6 border-b border-white/5 pb-6 sm:pb-8">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.4em] text-blue-400 font-medium mb-1 sm:mb-2">Builder</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Create Workflow</h2>
           </div>
-          <div className="flex gap-3">
-            <Button variant="secondary" type="submit" name="action" value="draft">
-              Save Draft
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+            <Button variant="secondary" type="submit" name="action" value="draft" className="flex-1 sm:flex-none">
+              <span className="hidden sm:inline">Save Draft</span>
+              <span className="sm:hidden">Draft</span>
             </Button>
-            <Button type="submit" name="action" value="publish" rightIcon={<span>→</span>}>
+            <Button type="submit" name="action" value="publish" rightIcon={<span>→</span>} className="flex-1 sm:flex-none">
               Publish
             </Button>
           </div>
         </header>
 
-        <Card className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <label className="space-y-2">
             <span className="text-xs uppercase tracking-[0.3em] text-slate-400 font-medium">Name</span>
             <input
@@ -133,8 +134,8 @@ export default function NewWorkflowRoute() {
       </Form>
 
       {actionData && "workflow" in actionData ? (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="p-3 sm:p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs sm:text-sm flex items-center gap-2">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <span>
@@ -144,7 +145,7 @@ export default function NewWorkflowRoute() {
         </div>
       ) : null}
 
-      <div className="h-[640px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm">
+      <div className="h-[400px] sm:h-[500px] lg:h-[640px] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm">
         <ClientOnly fallback={<div className="h-full w-full bg-white/5 animate-pulse" />}>
           {() => (
             <FlowBuilder
